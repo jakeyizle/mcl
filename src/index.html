@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Hello World!</title>
+  <link rel="stylesheet" href="index.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <!-- <link
+    type="text/css"
+    href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css"
+  /> -->
+  <!-- <link
+    type="text/css"
+    href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"
+  /> -->
+</head>
+
+<div id="app" class="vue-app">  
+  <input v-model="attackingPlayer" placeholder="attackingPlayer">
+  <input v-model="minimumDamageDone" placeholder="MinimumDamageDone">
+  <label>didKill?</label><input type="checkbox" id="didKill" v-model="didKill">
+  <input v-model="minimumMoveCount" placeholder="minimumMoveCount">
+
+  <button v-on:click="getConversionsFromDatabase">Search</button>
+
+  <template v-if='!!conversions'>
+    <b-pagination v-model="currentPage" :total-rows="rows" :per-page="perPage" aira-controls="my-table"></b-pagination>
+    <b-table id="my-table" striped hover :items="conversions" :per-page="perPage" :current-page="currentPage"
+      :fields="fields" primary-key="id">
+      <template #cell(button)="data">
+        <button v-on:click="play(data.item)">Test Me Daddy</button>
+      </template>
+      <template #cell(vote)="data">
+        <input type="number" v-model="data.item.vote" v-on:change="updateConversion(data.item)">
+      </template>
+    </b-table>    
+  </template>
+</div>
+
+<script src="mainRenderer.js"></script>
+</body>
+
+</html>

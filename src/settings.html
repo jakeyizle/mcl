@@ -1,0 +1,31 @@
+<html>
+    <body>
+        <div>
+            <label>Replay Path: 
+                <label id="replayPath"></label>
+                <button id ="replayButton" onclick="document.getElementById('replaySelector').click()">Select Replay Folder</button>
+                <input type="file" id="replaySelector" webkitdirectory hidden />
+            </label>
+        </div>
+        <div>
+            <label>Melee Iso Path: 
+                <label id="isoPath"></label>
+                <button id ="isoButton" onclick="document.getElementById('isoSelector').click()">Select SSBM ISO Path</button>
+                <input type="file" id="isoSelector" accept=".iso" hidden />
+            </label>
+        </div>
+        <div>
+            <label>Playback Dolphin Path: 
+                <label id="playbackPath"></label>
+                <button id ="playbackButton" onclick="document.getElementById('playbackSelector').click()">Select Playback Dolphin path</button>
+                <input type="file" id="playbackSelector" accept=".exe" hidden/>
+            </label>
+        </div>
+
+
+        <button onclick="changeWindow()">Change Window</button>
+    <script src="settings.js"></script>
+  </body>
+</html>
+
+
