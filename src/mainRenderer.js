@@ -189,6 +189,6 @@ function conversionLoaded(obj) {
   let conversionNumber = obj.conversionNumber;
   let percentage = (conversionNumber / progressBar.ariaValueMax) * 100;
   progressBar.style.width = percentage + "%"
-  document.getElementById('conversionProgress-text').innerHTML = `${conversionNumber} of ${progressBar.ariaValueMax} replays loaded into database`;
+  document.getElementById('conversionProgress-text').innerHTML = `${conversionNumber} of ${progressBar.ariaValueMax} conversions loaded from replay`;
   progressBar.ariaValueNow = conversionNumber;
 }
