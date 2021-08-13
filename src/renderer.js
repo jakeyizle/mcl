@@ -40,9 +40,8 @@ async function startDatabaseLoading() {
     const cachedReplays = await db.getAll('games');
     const cachedGames = cachedReplays.map(x=>x.name);
 
+    const newReplays = replayFiles.filter(replayFile => !cachedGames.includes(replayFile.name));        
 
-    const newReplays = replayFiles.filter(replayFile => !cachedGames.includes(replayFile.name));
-    
     ipcRenderer.invoke('reply', {
         'name': 'startingDatabaseLoad',
         'args': {
@@ -55,20 +54,40 @@ async function startDatabaseLoading() {
         const metadata = game.getMetadata();
 
         let conversions = game.getStats().conversions;
+        ipcRenderer.invoke('reply', {
+            'name': 'startingConversionLoad',
+            'args': {
+                'conversionCount': conversions.length,            
+            }
+        });
+
         for (let j = 0; j < conversions.length; j++) {
-            conversions[j].startFrame = Math.max(-123, conversions[j].startFrame);
-            conversions[j].endFrame = Math.min(game.getLatestFrame().frame, conversions[j].endFrame),
+            //-123 is start of game
+            conversions[j].startFrame = conversions[j].startFrame || -123;            
+            conversions[j].endFrame = conversions[j].endFrame || game.getLatestFrame().frame;            
             conversions[j].filePath = newReplays[i].path;
             conversions[j].attackingPlayer = metadata.players[conversions[j].playerIndex].names.code;
             conversions[j].defendingPlayer = metadata.players[conversions[j].opponentIndex].names.code;
             conversions[j].attackingCharacter = settings.players[conversions[j].playerIndex].characterId;
             conversions[j].defendingCharacter = settings.players[conversions[j].opponentIndex].characterId;
             conversions[j].stage = settings.stageId;
-            conversions[j].percent = Math.round((conversions[j].endPercent - conversions[j].startPercent) * 100)/100;
+            conversions[j].percent = Math.round((conversions[j].currentPercent - conversions[j].startPercent) * 100)/100;
             conversions[j].time = Math.round((conversions[j].endFrame - conversions[j].startFrame) * 100)/100;
             await db.insertTableContent('conversions', conversions[j]);
+            ipcRenderer.invoke('reply', {
+                'name': 'conversionLoaded',
+                'args': {
+                    'conversionNumber': j++,            
+                }
+            });
         }        
         await db.insertTableContent('games', newReplays[i]);        
+        ipcRenderer.invoke('reply', {
+            'name': 'fileLoaded',
+            'args': {
+                'fileNumber': i+1,            
+            }
+        });
         //does this help with a memory leak?
         //i was having an issue where windows would crash after processing about 90 files
         //then i added a sleep to help debug, and the issue went away    

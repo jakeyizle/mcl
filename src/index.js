@@ -38,7 +38,8 @@ const createWindow = () => {
   });
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-
+  startWindowAndExecuteFunction({name: 'startDatabaseLoading'}
+  );
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
@@ -93,11 +94,15 @@ app.on('activate', () => {
 
 //renderer sends in a function with args
 //we open a window - but if we message it right away it sometimes doesn't get the message and the window just sits there
-ipcMain.handle('execute', async(event, message)=> {  
+function startWindowAndExecuteFunction(message) { 
   let win = createInvisibleWindow();
   win.once('ready-to-show', () => {    
     win.send('execute', message);
-  })   
+  })
+}
+
+ipcMain.handle('execute', async(event, message)=> {  
+  startWindowAndExecuteFunction(message);
 }) 
 
 ipcMain.handle('ready', async(event, message) => {

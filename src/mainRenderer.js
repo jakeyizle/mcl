@@ -154,8 +154,6 @@ const vm = new Vue({
   }
 })
 
-
-
 async function startDatabaseLoading() {
   await ipcRenderer.invoke('execute', {
     name: 'startDatabaseLoading'
@@ -163,40 +161,34 @@ async function startDatabaseLoading() {
 }
 
 function startingDatabaseLoad(obj) {
-  console.log(obj);
-  vm.maxCount = obj.fileCount;
+  console.log('doink')
+  document.getElementById('progress').hidden = false;
+  document.getElementById('progress-bar').ariaValueMax = obj.fileCount;
 }
 
 function fileLoaded(obj) {
-  console.log(obj);
-  vm.currentCount = obj.fileNumber;
+  console.log('dink')
+  let progressBar = document.getElementById('progress-bar');
+  let fileNumber = obj.fileNumber;
+  let percentage = (fileNumber / progressBar.ariaValueMax) * 100;
+  progressBar.style.width = percentage + "%"
+  document.getElementById('progress-text').innerHTML = `${fileNumber} of ${progressBar.ariaValueMax} replays loaded into database`;
+  progressBar.ariaValueNow = fileNumber;
 }
 
-
-async function insertReplayPath(filePath) {
-    let results = await db.updateRow('configuration', {configId: 'replayPath'}, {'value': filePath});
-    console.log(results);
-    return results;
+function startingConversionLoad(obj) {
+  console.log('doink')
+  document.getElementById('conversionProgress').hidden = false;
+  document.getElementById('conversionProgress-bar').ariaValueMax = obj.conversionCount;
+  document.getElementById('conversionProgress-bar').style.width = '0%';
 }
 
-
-//get all files in all subdirectories
-async function getFiles(path = "./") {
-    const entries = fs.readdirSync(path, { withFileTypes: true });
-    // Get files within the current directory and add a path key to the file objects
-    const files = entries
-        .filter(file => !file.isDirectory())
-        .map(file => ({ ...file, path: path + file.name }));
-  
-    // Get folders within the current directory
-    const folders = entries.filter(folder => folder.isDirectory());
-  
-    for (const folder of folders)
-        /*
-          Add the found files within the subdirectory to the files array by calling the
-          current function itself
-        */
-        files.push(...await getFiles(`${path}${folder.name}/`));
-  
-    return files;
-  }
+function conversionLoaded(obj) {
+  console.log('dink')
+  let progressBar = document.getElementById('conversionProgress-bar');
+  let conversionNumber = obj.conversionNumber;
+  let percentage = (conversionNumber / progressBar.ariaValueMax) * 100;
+  progressBar.style.width = percentage + "%"
+  document.getElementById('conversionProgress-text').innerHTML = `${conversionNumber} of ${progressBar.ariaValueMax} replays loaded into database`;
+  progressBar.ariaValueNow = conversionNumber;
+}
