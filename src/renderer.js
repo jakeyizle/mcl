@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", async function(){
 
 ipcRenderer.on('execute', async(event, message) => {
     console.log('execute!');
-    console.log(message);
     let {name, args} = message;    
     if (this[name]) {
         this[name](args);
@@ -20,17 +19,6 @@ ipcRenderer.on('execute', async(event, message) => {
         console.log("no function found");
     }
 })
-
-
-
-function testFunction(msg) {
-    console.log('Starting 5 second sleep -', msg);
-    var start = new Date().getTime();
-    while (new Date().getTime() < start + 1000);
-    console.log("testFunction successful!", msg);
-    ipcRenderer.invoke('reply',"testFunction successful!");
-}
-
 
 async function startDatabaseLoading() {    
     const dbData = await db.getRows('configuration', {'configId': 'replayPath'});
@@ -73,15 +61,15 @@ async function startDatabaseLoading() {
             conversions[j].stage = settings.stageId;
             conversions[j].percent = Math.round((conversions[j].currentPercent - conversions[j].startPercent) * 100)/100;
             conversions[j].time = Math.round((conversions[j].endFrame - conversions[j].startFrame) * 100)/100;
-            await db.insertTableContent('conversions', conversions[j]);
+            db.insertTableContent('conversions', conversions[j]);
             ipcRenderer.invoke('reply', {
                 'name': 'conversionLoaded',
                 'args': {
-                    'conversionNumber': j++,            
+                    'conversionNumber': j            
                 }
             });
         }        
-        await db.insertTableContent('games', newReplays[i]);        
+        db.insertTableContent('games', newReplays[i]);        
         ipcRenderer.invoke('reply', {
             'name': 'fileLoaded',
             'args': {

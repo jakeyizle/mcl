@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@slippi/slippi-js": "^5.1.1",
+    "better-sqlite3": "^7.4.3",
     "bootstrap-vue": "^2.21.2",
     "electron-db": "^0.15.7",
     "electron-squirrel-startup": "^1.0.0",

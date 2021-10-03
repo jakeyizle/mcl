@@ -5,9 +5,7 @@ const { exec } = require("child_process");
 
 const BootstrapVue = require('bootstrap-vue').default;
 
-var dolphinPath = "C:\\Users\\18135\\AppData\\Roaming\\Slippi Desktop App\\dolphin\\Dolphin.exe"
-var isoPath = "D:\\Games\\Dolphin Isos\\Super Smash Bros. Melee (USA) (En,Ja) (Rev 2).nkit.iso"
-var replayCommand = `"${dolphinPath}" -i tempMoments.json -b -e "${isoPath}"`;
+
 var config;
 
 Vue.config.devtools = true;
@@ -21,10 +19,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 //routes replies from workers
 ipcRenderer.on('reply', async(event, message) => {
-  console.log('reply!');
-  console.log(message);
   let {name, args} = message;    
-  console.log(this[name]);
   if (this[name]) {
       this[name](args);
   } else {
@@ -110,8 +105,15 @@ const vm = new Vue({
       }
       console.log(this.conversions);
       this.conversions = conversions;
+      return conversions;
     },
     play: function(item) {
+      var playbackPath = config.find(x=>x.configId == 'playbackPath').value;
+      console.log(playbackPath);
+      var isoPath = config.find(x=>x.configId == 'isoPath').value;
+      console.log(isoPath);
+      var replayCommand = `"${playbackPath}" -i tempMoments.json -b -e "${isoPath}"`; 
+      console.log(replayCommand);     
       var output = {
         "mode": "queue",
         "replay": "",
@@ -161,13 +163,11 @@ async function startDatabaseLoading() {
 }
 
 function startingDatabaseLoad(obj) {
-  console.log('doink')
   document.getElementById('progress').hidden = false;
   document.getElementById('progress-bar').ariaValueMax = obj.fileCount;
 }
 
 function fileLoaded(obj) {
-  console.log('dink')
   let progressBar = document.getElementById('progress-bar');
   let fileNumber = obj.fileNumber;
   let percentage = (fileNumber / progressBar.ariaValueMax) * 100;
@@ -177,14 +177,12 @@ function fileLoaded(obj) {
 }
 
 function startingConversionLoad(obj) {
-  console.log('doink')
   document.getElementById('conversionProgress').hidden = false;
   document.getElementById('conversionProgress-bar').ariaValueMax = obj.conversionCount;
   document.getElementById('conversionProgress-bar').style.width = '0%';
 }
 
 function conversionLoaded(obj) {
-  console.log('dink')
   let progressBar = document.getElementById('conversionProgress-bar');
   let conversionNumber = obj.conversionNumber;
   let percentage = (conversionNumber / progressBar.ariaValueMax) * 100;

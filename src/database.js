@@ -10,7 +10,9 @@ module.exports = {
             });        
             if (!db.valid(table)) {
                 console.log('Recreating', table);
-                db.clearTable(table);
+                db.clearTable(table, (succ, data ) => {
+                    console.log(`${table} | Succ - ${succ} | Msg - ${data}`);
+                } );
                 db.createTable(table,  (succ, data) => {
                     console.log(`${table} | Succ - ${succ} | Msg - ${data}`);
                 }); 

@@ -1,24 +1,77 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain
+} = require('electron');
 const path = require('path');
 const db = require('./database');
-const fs = require ('fs');
-
+const fs = require('fs');
+const os = require('os');
+const sqliteDB = require('better-sqlite3')('melee.db');
+sqliteDB.pragma('journal_mode = WAL');
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
   app.quit();
 }
 
-var tasks = new Map();
+var threads = new Set();
 var mainWindow;
 
+const createDataRenderers = async () => {
+  //reserve 1 thread for main renderer
+  const threadCount = os.cpus().length - 1;
+
+  const config = await db.getAll('configuration');
+  const replayPath = config.find(x => x.configId == 'replayPath').value;
+  const files = await getReplayFiles(replayPath);
+  const max = files.length;
+  const range = Math.ceil(max / threadCount);
+  let start = 0;
+  for (let i = 0; i < threadCount; i++) {
+    //last thread takes whatever couldnt be evenly divided
+    let message = i == threadCount - 1 ? {
+      start: start,
+      range: range + ((max + 1) % threadCount),
+      files: files
+    } : {
+      start: start,
+      range: range,
+      files: files
+    }
+
+    let win = createDataRenderer();
+    win.once('ready-to-show', () => {
+      win.send('execute', message);
+    })    
+    threads.add(win);
+
+    start += range;
+  }
+}
+
+
+function createDataRenderer() {
+  const dataRenderer = new BrowserWindow({
+    show: true, //false,
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true,
+      contextIsolation: false
+    }
+  });
+  dataRenderer.loadFile(path.join(__dirname, 'dataRenderer.html'));
+  dataRenderer.webContents.openDevTools();
+
+  return dataRenderer;
+}
 
 const createInvisibleWindow = () => {
-  const invisbleWindow = new BrowserWindow( {
-    //show:false,
+  const invisbleWindow = new BrowserWindow({
+    show: false,
     webPreferences: {
-      nodeIntegration: true,  
+      nodeIntegration: true,
       enableRemoteModule: true,
-      contextIsolation: false    
+      contextIsolation: false
     }
   });
 
@@ -38,8 +91,13 @@ const createWindow = () => {
   });
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  startWindowAndExecuteFunction({name: 'startDatabaseLoading'}
-  );
+  //previous
+  // startWindowAndExecuteFunction({
+  //   name: 'startDatabaseLoading'
+  // });
+
+  //new
+  createDataRenderers();
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
@@ -61,14 +119,16 @@ const createSettingsWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-  db.createDatabase(); 
+  initDB();
+  //rename db -> settings/config
+  db.createDatabase();
   isConfigValid().then((isConfigValid) => {
     if (isConfigValid) {
       createWindow();
     } else {
       createSettingsWindow();
     }
-  });  
+  });
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -94,31 +154,31 @@ app.on('activate', () => {
 
 //renderer sends in a function with args
 //we open a window - but if we message it right away it sometimes doesn't get the message and the window just sits there
-function startWindowAndExecuteFunction(message) { 
+function startWindowAndExecuteFunction(message) {
   let win = createInvisibleWindow();
-  win.once('ready-to-show', () => {    
+  win.once('ready-to-show', () => {
     win.send('execute', message);
   })
 }
 
-ipcMain.handle('execute', async(event, message)=> {  
+ipcMain.handle('execute', async (event, message) => {
   startWindowAndExecuteFunction(message);
-}) 
+})
 
-ipcMain.handle('ready', async(event, message) => {
+ipcMain.handle('ready', async (event, message) => {
   let sender = event.sender.getOwnerBrowserWindow();
   sender.send('execute', tasks.get(sender.id));
   tasks.delete(sender.id);
 })
 
-ipcMain.handle('changeWindow', async(event, message) => {
+ipcMain.handle('changeWindow', async (event, message) => {
   console.log(message);
   mainWindow.loadFile(path.join(__dirname, `${message.window}.html`));
 })
 //on completion of function, we forward it back to the main window
-ipcMain.handle('reply', async(event, message)=> {
-  await mainWindow.webContents.send('reply', message);    
-}) 
+ipcMain.handle('reply', async (event, message) => {
+  await mainWindow.webContents.send('reply', message);
+})
 
 async function isConfigValid() {
   try {
@@ -129,12 +189,12 @@ async function isConfigValid() {
     let files = await getFiles(replayPath);
     let regExp = /.*\.slp$/;
     let fileCount = files.filter(file => regExp.test(file.name)).length;
-    if (fileCount <= 0 ) {
+    if (fileCount <= 0) {
       return false;
     }
 
-    let isoPath = config.find(x=>x.configId == 'isoPath').value;
-    let playbackPath = config.find(x=>x.configId == 'playbackPath').value;
+    let isoPath = config.find(x => x.configId == 'isoPath').value;
+    let playbackPath = config.find(x => x.configId == 'playbackPath').value;
     return true;
   } catch (e) {
     return false;
@@ -144,21 +204,75 @@ async function isConfigValid() {
 
 //get all files in all subdirectories
 async function getFiles(path = "./") {
-  const entries = fs.readdirSync(path, { withFileTypes: true });
+  const entries = fs.readdirSync(path, {
+    withFileTypes: true
+  });
   // Get files within the current directory and add a path key to the file objects
   const files = entries
-      .filter(file => !file.isDirectory())
-      .map(file => ({ ...file, path: path + file.name }));
+    .filter(file => !file.isDirectory())
+    .map(file => ({
+      ...file,
+      path: path + file.name
+    }));
 
   // Get folders within the current directory
   const folders = entries.filter(folder => folder.isDirectory());
 
   for (const folder of folders)
-      /*
-        Add the found files within the subdirectory to the files array by calling the
-        current function itself
-      */
-      files.push(...await getFiles(`${path}${folder.name}/`));
+    /*
+      Add the found files within the subdirectory to the files array by calling the
+      current function itself
+    */
+    files.push(...await getFiles(`${path}${folder.name}/`));
 
   return files;
+}
+
+async function getReplayFiles(path) {
+  let files = await getFiles(path);
+  //ends in .slp
+  let regExp = /.*\.slp$/;
+  let replays = files.filter(file => regExp.test(file.name));
+  return replays;
+}
+
+
+
+function initDB() {
+  const gameStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS games (
+      gameId INTEGER Primary Key,
+      name NOT NULL,
+      path UNIQUE)`);
+  const conversionStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS conversions (
+      conversionId INTEGER Primary Key,
+      playerIndex,
+      opponentIndex
+      ,startFrame
+      ,endFrame
+      ,startPercent
+      ,currentPercent
+      ,endPercent
+      ,didKill
+      ,openingType
+      ,attackingPlayer
+      ,defendingPlayer
+      ,attackingCharacter
+      ,defendingCharacter
+      ,stage
+      ,percent
+      ,time
+      ,filepath
+      ,FOREIGN KEY (filepath) REFERENCES games(path)
+  )`);
+  const movesStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS conversionMoves (
+      conversionMoveId INTEGER Primary Key,
+      conversionId INTEGER NOT NULL,
+      moveId,
+      frame,
+      hitCount,
+      damage
+  )`);
+  gameStmt.run();
+  conversionStmt.run();
+  movesStmt.run();
 }
