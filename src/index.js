@@ -42,7 +42,7 @@ const createDataRenderers = async () => {
     let win = createDataRenderer();
     win.once('ready-to-show', () => {
       win.send('execute', message);
-    })    
+    })
     threads.add(win);
 
     start += range;
@@ -239,12 +239,11 @@ async function getReplayFiles(path) {
 
 
 function initDB() {
-  const gameStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS games (
-      gameId INTEGER Primary Key,
+  const gameStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,
-      path UNIQUE)`);
+      path Primary Key)`);
   const conversionStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS conversions (
-      conversionId INTEGER Primary Key,
+      hash Primary Key,
       playerIndex,
       opponentIndex
       ,startFrame
@@ -264,13 +263,14 @@ function initDB() {
       ,filepath
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`);
-  const movesStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS conversionMoves (
+  const movesStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS moves (
       conversionMoveId INTEGER Primary Key,
-      conversionId INTEGER NOT NULL,
+      conversionHash,
       moveId,
       frame,
       hitCount,
       damage
+      ,FOREIGN KEY (conversionHash) REFERENCES conversions(hash)
   )`);
   gameStmt.run();
   conversionStmt.run();
