@@ -3,6 +3,13 @@ const {
   BrowserWindow,
   ipcMain
 } = require('electron');
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData
+} = require('worker_threads');
+
 const path = require('path');
 const db = require('./database');
 const fs = require('fs');
@@ -89,6 +96,7 @@ const createWindow = () => {
       enableRemoteModule: true,
     }
   });
+
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
   //previous
@@ -97,7 +105,8 @@ const createWindow = () => {
   // });
 
   //new
-  createDataRenderers();
+  // createDataRenderers();
+  createDataWorkers();
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
@@ -236,14 +245,60 @@ async function getReplayFiles(path) {
   return replays;
 }
 
+async function createDataWorkers() {
+  const threadCount = os.cpus().length - 1;
+  console.log(`threadcount: ${threadCount}`);
 
+  const config = await db.getAll('configuration');
+  const replayPath = config.find(x => x.configId == 'replayPath').value;
+  const localFiles = await getReplayFiles(replayPath);
+
+  const getFiles = sqliteDB.prepare("SELECT name from games");
+  const alreadyLoadedFiles = getFiles.all().map(x => x.name);
+
+  const files = localFiles.filter(file => !alreadyLoadedFiles.includes(file.name));
+  console.log(files.length);
+
+  const max = files.length;
+  const range = Math.ceil(max / threadCount);
+  const finalRange = range + ((max + 1) % threadCount);
+  let start = 0;
+  if (files.length > 0) {
+    for (let i = 0; i < threadCount; i++) {
+      const myStart = start;
+      //final worker has to take remainder
+      const myRange = i == threadCount - 1 ? finalRange : range;
+      console.log({
+        myStart,
+        myRange
+      })
+      threads.add(new Worker('./src/dataWorker.js', {
+        workerData: {
+          start: myStart,
+          range: myRange,
+          files: files
+        }
+      }));
+      start += range;
+    }
+    for (let worker of threads) {
+      worker.on('exit', () => {
+        threads.delete(worker);
+        console.log(`Thread exiting, ${threads.size} running...`);
+      });
+      worker.on('message', (msg) => {
+        console.log(msg);
+      })
+    }
+  }
+}
 
 function initDB() {
   const gameStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,
       path Primary Key)`);
   const conversionStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS conversions (
-      hash Primary Key,
+      id Primary Key,
       playerIndex,
       opponentIndex
       ,startFrame
@@ -265,12 +320,12 @@ function initDB() {
   )`);
   const movesStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS moves (
       conversionMoveId INTEGER Primary Key,
-      conversionHash,
+      conversionId,
       moveId,
       frame,
       hitCount,
       damage
-      ,FOREIGN KEY (conversionHash) REFERENCES conversions(hash)
+      ,FOREIGN KEY (conversionId) REFERENCES conversions(id)
   )`);
   gameStmt.run();
   conversionStmt.run();

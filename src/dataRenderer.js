@@ -51,6 +51,7 @@ ipcRenderer.on('execute', async (event, message) => {
                     conversions[j].opponentIndex = defendingIndex;
                     conversions[j].didKill = conversions[j].didKill ? 1 : 0;
                     conversions[j].hash = murmurhash3_32_gc(files[i].path + conversions[j].startFrame +conversions[j].attackingPlayer+conversions[j].defendingPlayer, 69);
+                    console.log(conversions[j].hash)
                     conversions[j].moves.forEach(move => {
                         move.conversionHash = conversions[j].hash;                        
                     })
@@ -69,7 +70,6 @@ ipcRenderer.on('execute', async (event, message) => {
                 });
                 insertManyMoves(moves);
 
-                console.log('conversions loaded');
                 console.log(`${i} of ${end} - start = ${start}`)
                 ipcRenderer.invoke('reply', {
                     'name': 'gameLoaded',
