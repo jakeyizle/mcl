@@ -1,6 +1,6 @@
 {
-  "name": "multiprocesstest",
-  "productName": "multiprocesstest",
+  "name": "melee-combo-loader",
+  "productName": "melee-combo-loader",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": "src/index.js",
@@ -24,7 +24,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "multiprocesstest"
+            "name": "melee-combo-loader"
           }
         },
         {

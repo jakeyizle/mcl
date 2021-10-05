@@ -3,7 +3,7 @@ const db = require('electron-db');
 //The electron-db library doesn't use promises so wrote these functions to promisefy
 module.exports = {
     createDatabase: async function createDatabase() {
-        let tables = ['games', 'conversions', 'configuration'];
+        let tables = ['configuration'];
         tables.forEach(table => {   
             db.createTable(table,  (succ, data) => {
                 console.log(`${table} | Succ - ${succ} | Msg - ${data}`);

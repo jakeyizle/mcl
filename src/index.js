@@ -11,11 +11,12 @@ const {
 } = require('worker_threads');
 
 const path = require('path');
-const db = require('./database');
+const config = require('./database');
 const fs = require('fs');
 const os = require('os');
-const sqliteDB = require('better-sqlite3')('melee.db');
-sqliteDB.pragma('journal_mode = WAL');
+const { settings } = require('cluster');
+const db = require('better-sqlite3')('melee.db');
+db.pragma('journal_mode = WAL');
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
   app.quit();
@@ -28,7 +29,7 @@ const createDataRenderers = async () => {
   //reserve 1 thread for main renderer
   const threadCount = os.cpus().length - 1;
 
-  const config = await db.getAll('configuration');
+  const config = await config.getAll('configuration');
   const replayPath = config.find(x => x.configId == 'replayPath').value;
   const files = await getReplayFiles(replayPath);
   const max = files.length;
@@ -130,8 +131,8 @@ const createSettingsWindow = () => {
 app.on('ready', () => {
   initDB();
   //rename db -> settings/config
-  db.createDatabase();
   isConfigValid().then((isConfigValid) => {
+    console.log(`is config valid? - ${isConfigValid}`);
     if (isConfigValid) {
       createWindow();
     } else {
@@ -183,6 +184,8 @@ ipcMain.handle('ready', async (event, message) => {
 ipcMain.handle('changeWindow', async (event, message) => {
   console.log(message);
   mainWindow.loadFile(path.join(__dirname, `${message.window}.html`));
+  //figure out a better way
+  createDataWorkers();
 })
 //on completion of function, we forward it back to the main window
 ipcMain.handle('reply', async (event, message) => {
@@ -191,21 +194,27 @@ ipcMain.handle('reply', async (event, message) => {
 
 async function isConfigValid() {
   try {
-    let config = await db.getAll('configuration');
-    //melee iso, playback slippi, replay path
-
-    let replayPath = config.find(x => x.configId == 'replayPath').value;
-    let files = await getFiles(replayPath);
-    let regExp = /.*\.slp$/;
-    let fileCount = files.filter(file => regExp.test(file.name)).length;
-    if (fileCount <= 0) {
-      return false;
+    const settingsStmt = db.prepare('SELECT * FROM settings');
+    const settingsInfo = settingsStmt.all();
+    if (settingsInfo.length < 3) return false; 
+    for (let setting of settingsInfo) {    
+      console.log(setting);
+      switch(setting) {
+        case 'replayPath':
+          let files = await getFiles(setting);
+          let regExp = /.*\.slp$/;
+          let fileCount = files.filter(file => regExp.test(file.name)).length;
+          if (fileCount <= 0) return false;          
+          break;
+        default:
+          if (!setting) return false;
+          break;
+      }
     }
-
-    let isoPath = config.find(x => x.configId == 'isoPath').value;
-    let playbackPath = config.find(x => x.configId == 'playbackPath').value;
     return true;
   } catch (e) {
+    console.log(e);
+    console.log('error :(');
     return false;
   }
 }
@@ -249,11 +258,11 @@ async function createDataWorkers() {
   const threadCount = os.cpus().length - 1;
   console.log(`threadcount: ${threadCount}`);
 
-  const config = await db.getAll('configuration');
-  const replayPath = config.find(x => x.configId == 'replayPath').value;
+  const settingsStmt = db.prepare('SELECT value from settings where key = ?')
+  const replayPath = settingsStmt.get('replayPath').value;
   const localFiles = await getReplayFiles(replayPath);
 
-  const getFiles = sqliteDB.prepare("SELECT name from games");
+  const getFiles = db.prepare('SELECT name from games');
   const alreadyLoadedFiles = getFiles.all().map(x => x.name);
 
   const files = localFiles.filter(file => !alreadyLoadedFiles.includes(file.name));
@@ -294,10 +303,10 @@ async function createDataWorkers() {
 }
 
 function initDB() {
-  const gameStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS games (      
+  const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,
       path Primary Key)`);
-  const conversionStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS conversions (
+  const conversionStmt = db.prepare(`CREATE TABLE IF NOT EXISTS conversions (
       id Primary Key,
       playerIndex,
       opponentIndex
@@ -318,7 +327,7 @@ function initDB() {
       ,filepath
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`);
-  const movesStmt = sqliteDB.prepare(`CREATE TABLE IF NOT EXISTS moves (
+  const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (
       conversionMoveId INTEGER Primary Key,
       conversionId,
       moveId,
@@ -327,7 +336,12 @@ function initDB() {
       damage
       ,FOREIGN KEY (conversionId) REFERENCES conversions(id)
   )`);
+  const settingsStmt = db.prepare(`CREATE TABLE IF NOT EXISTS settings (
+    key Primary Key,
+    value
+  )`);
   gameStmt.run();
   conversionStmt.run();
   movesStmt.run();
+  settingsStmt.run();
 }
