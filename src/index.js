@@ -11,7 +11,6 @@ const {
 } = require('worker_threads');
 
 const path = require('path');
-const config = require('./database');
 const fs = require('fs');
 const os = require('os');
 const { settings } = require('cluster');
@@ -281,7 +280,7 @@ async function createDataWorkers() {
         myStart,
         myRange
       })
-      threads.add(new Worker('./src/dataWorker.js', {
+      threads.add(new Worker(path.join(__dirname, 'dataWorker.js'), {
         workerData: {
           start: myStart,
           range: myRange,
