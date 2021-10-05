@@ -90,3 +90,7 @@ out/
 
 #db files
 .db*
+
+/melee.db
+/melee.db-shm
+/melee.db-wal
