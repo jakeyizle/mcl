@@ -1,5 +1,43 @@
+const {
+  ipcRenderer
+} = require('electron');
+const Photon = require("electron-photon");
 
-const { ipcRenderer } = require('electron');
+var currentFileNumber = 1;
+
+document.addEventListener("DOMContentLoaded", async function() {
+  addNavElements();
+});
+
+const applicationIds = ['settings', 'main'];
+
+
+//add navigation elements
+function addNavElements() {
+  var parentElement = document.getElementById('navbar');
+  let navItems = ['settings', 'main'];
+  for (let navItem of navItems) {
+    let navItemElement = document.createElement('nav-item');
+    navItemElement.setAttribute("id", navItem+'nav');
+    navItemElement.innerHTML = navItem;
+
+    navItemElement.addEventListener('click', () => {
+      showAppAndHideOthers(navItem);
+    });
+    parentElement.appendChild(navItemElement);
+
+  }
+
+}
+
+function showAppAndHideOthers(elementId) {
+  for (let applicationId of applicationIds) {
+    let element = document.getElementById(applicationId);
+    console.log(`elementid - ${elementId}`);
+    console.log(`applicationId - ${applicationId}`);
+    element.style.display = (applicationId === elementId) ? 'block' : 'none';
+  }
+}
 
 
 async function startDatabaseLoading() {
@@ -8,31 +46,27 @@ async function startDatabaseLoading() {
   });
 }
 
-function startingDatabaseLoad(obj) {
+ipcRenderer.once('startGameLoading', (event, arg) => {
+  console.log(1);
+  console.log(arg);
+  startingDatabaseLoad(arg);
+})
+
+ipcRenderer.on('gameLoaded', (event, arg) => {
+  fileLoaded();
+})
+
+
+function startingDatabaseLoad(max) {
   document.getElementById('progress').hidden = false;
-  document.getElementById('progress-bar').ariaValueMax = obj.fileCount;
+  document.getElementById('progress-bar').ariaValueMax = max;
 }
 
-function fileLoaded(obj) {
+function fileLoaded() {
+  currentFileNumber++;
   let progressBar = document.getElementById('progress-bar');
-  let fileNumber = obj.fileNumber;
-  let percentage = (fileNumber / progressBar.ariaValueMax) * 100;
+  let percentage = (currentFileNumber / progressBar.ariaValueMax) * 100;
   progressBar.style.width = percentage + "%"
-  document.getElementById('progress-text').innerHTML = `${fileNumber} of ${progressBar.ariaValueMax} replays loaded into database`;
-  progressBar.ariaValueNow = fileNumber;
-}
-
-function startingConversionLoad(obj) {
-  document.getElementById('conversionProgress').hidden = false;
-  document.getElementById('conversionProgress-bar').ariaValueMax = obj.conversionCount;
-  document.getElementById('conversionProgress-bar').style.width = '0%';
-}
-
-function conversionLoaded(obj) {
-  let progressBar = document.getElementById('conversionProgress-bar');
-  let conversionNumber = obj.conversionNumber;
-  let percentage = (conversionNumber / progressBar.ariaValueMax) * 100;
-  progressBar.style.width = percentage + "%"
-  document.getElementById('conversionProgress-text').innerHTML = `${conversionNumber} of ${progressBar.ariaValueMax} conversions loaded from replay`;
-  progressBar.ariaValueNow = conversionNumber;
+  document.getElementById('progress-text').innerHTML = `${currentFileNumber} of ${progressBar.ariaValueMax} replays loaded into database`;
+  progressBar.ariaValueNow = currentFileNumber;
 }

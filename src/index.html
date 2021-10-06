@@ -1,55 +1,76 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Required meta tags -->
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<ph-window>
 
-  <title>Hello World!</title>
-  <link rel="stylesheet" href="index.css">
-  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
-</head>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<div id="progress" class="progress" hidden>
-  <div id="progress-bar" class="progress-bar" role="progressbar"
-  aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width:0%">    
+    <title>Hello World!</title>
+    <link rel="stylesheet" href="index.css">
+
+
+  </head>
+
+  <tool-bar type="header">
+    Toolbar Header
+  </tool-bar>
+  <window-content>
+    <div class="pane-group">
+      <div class="pane-sm sidebar">
+        <nav-group id="navbar">
+        </nav-group>
+      </div>
+      <div class="pane">
+        <div id="main" style="display:none">
+          hi mom
+          <div id="progress" class="progress">
+            <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+              aria-valuemax="0" style="width:0%">
+            </div>
+            <div id="progress-text"></div>
+          </div>
+        </div>
+        <div id="settings" style="display:none">
+          <div>
+            <label>Replay Path:
+              <label id="replayPath"></label>
+              <button id="replayButton" onclick="document.getElementById('replaySelector').click()">Select Replay
+                Folder</button>
+              <input type="file" id="replaySelector" webkitdirectory hidden />
+            </label>
+          </div>
+          <div>
+            <label>Melee Iso Path:
+              <label id="isoPath"></label>
+              <button id="isoButton" onclick="document.getElementById('isoSelector').click()">Select SSBM ISO
+                Path</button>
+              <input type="file" id="isoSelector" accept=".iso" hidden />
+            </label>
+          </div>
+          <div>
+            <label>Playback Dolphin Path:
+              <label id="playbackPath"></label>
+              <button id="playbackButton" onclick="document.getElementById('playbackSelector').click()">Select Playback
+                Dolphin path</button>
+              <input type="file" id="playbackSelector" accept=".exe" hidden />
+            </label>
+          </div>
+
+      </div>
+    </div>
   </div>
-  <div id="progress-text"></div>
-</div>
 
-<div id="conversionProgress" class="progress" hidden>
-  <div id="conversionProgress-bar" class="progress-bar progress-bar-success" role="progressbar"
-  aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width:0%">    
-  </div>
-  <div id="conversionProgress-text"></div>
-</div>
+  </window-content>
+  <tool-bar type="footer">
+    Footer Header
+  </tool-bar>
 
-<div id="app" class="vue-app">  
-  <input v-model="attackingPlayer" placeholder="attackingPlayer">
-  <input v-model="minimumDamageDone" placeholder="MinimumDamageDone">
-  <label>didKill?</label><input type="checkbox" id="didKill" v-model="didKill">
-  <input v-model="minimumMoveCount" placeholder="minimumMoveCount">
+  <script src="mainRenderer.js"></script>
+  <script src="settings.js"></script>
 
-  <button v-on:click="getConversionsFromDatabase">Search</button>
-
-  <template v-if='!!conversions'>
-    <b-pagination v-model="currentPage" :total-rows="rows" :per-page="perPage" aira-controls="my-table"></b-pagination>
-    <b-table id="my-table" striped hover :items="conversions" :per-page="perPage" :current-page="currentPage"
-      :fields="fields" primary-key="id">
-      <template #cell(button)="data">
-        <button v-on:click="play(data.item)">Test Me Daddy</button>
-      </template>
-      <template #cell(vote)="data">
-        <input type="number" v-model="data.item.vote" v-on:change="updateConversion(data.item)">
-      </template>
-    </b-table>    
-  </template>
-</div>
-
-<script src="mainRenderer.js"></script>
-</body>
+  </body>
+</ph-window>
 
 </html>

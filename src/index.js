@@ -24,68 +24,6 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
 var threads = new Set();
 var mainWindow;
 
-const createDataRenderers = async () => {
-  //reserve 1 thread for main renderer
-  const threadCount = os.cpus().length - 1;
-
-  const config = await config.getAll('configuration');
-  const replayPath = config.find(x => x.configId == 'replayPath').value;
-  const files = await getReplayFiles(replayPath);
-  const max = files.length;
-  const range = Math.ceil(max / threadCount);
-  let start = 0;
-  for (let i = 0; i < threadCount; i++) {
-    //last thread takes whatever couldnt be evenly divided
-    let message = i == threadCount - 1 ? {
-      start: start,
-      range: range + ((max + 1) % threadCount),
-      files: files
-    } : {
-      start: start,
-      range: range,
-      files: files
-    }
-
-    let win = createDataRenderer();
-    win.once('ready-to-show', () => {
-      win.send('execute', message);
-    })
-    threads.add(win);
-
-    start += range;
-  }
-}
-
-
-function createDataRenderer() {
-  const dataRenderer = new BrowserWindow({
-    show: true, //false,
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: true,
-      contextIsolation: false
-    }
-  });
-  dataRenderer.loadFile(path.join(__dirname, 'dataRenderer.html'));
-  dataRenderer.webContents.openDevTools();
-
-  return dataRenderer;
-}
-
-const createInvisibleWindow = () => {
-  const invisbleWindow = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: true,
-      contextIsolation: false
-    }
-  });
-
-  invisbleWindow.loadFile(path.join(__dirname, 'invisible.html'));
-  invisbleWindow.webContents.openDevTools();
-  return invisbleWindow;
-}
 
 const createWindow = () => {
   // Create the browser window.
@@ -99,14 +37,9 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  //previous
-  // startWindowAndExecuteFunction({
-  //   name: 'startDatabaseLoading'
-  // });
-
-  //new
-  // createDataRenderers();
-  createDataWorkers();
+  mainWindow.once('ready-to-show', () => {
+    createDataWorkers();
+  })
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
@@ -161,24 +94,6 @@ app.on('activate', () => {
 // code. You can also put them in separate files and import them here.
 
 
-//renderer sends in a function with args
-//we open a window - but if we message it right away it sometimes doesn't get the message and the window just sits there
-function startWindowAndExecuteFunction(message) {
-  let win = createInvisibleWindow();
-  win.once('ready-to-show', () => {
-    win.send('execute', message);
-  })
-}
-
-ipcMain.handle('execute', async (event, message) => {
-  startWindowAndExecuteFunction(message);
-})
-
-ipcMain.handle('ready', async (event, message) => {
-  let sender = event.sender.getOwnerBrowserWindow();
-  sender.send('execute', tasks.get(sender.id));
-  tasks.delete(sender.id);
-})
 
 ipcMain.handle('changeWindow', async (event, message) => {
   console.log(message);
@@ -186,6 +101,8 @@ ipcMain.handle('changeWindow', async (event, message) => {
   //figure out a better way
   createDataWorkers();
 })
+
+
 //on completion of function, we forward it back to the main window
 ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
@@ -206,7 +123,6 @@ async function isConfigValid() {
           if (fileCount <= 0) return false;          
           break;
         default:
-          if (!setting) return false;
           break;
       }
     }
@@ -216,41 +132,6 @@ async function isConfigValid() {
     console.log('error :(');
     return false;
   }
-}
-
-
-//get all files in all subdirectories
-async function getFiles(path = "./") {
-  const entries = fs.readdirSync(path, {
-    withFileTypes: true
-  });
-  // Get files within the current directory and add a path key to the file objects
-  const files = entries
-    .filter(file => !file.isDirectory())
-    .map(file => ({
-      ...file,
-      path: path + file.name
-    }));
-
-  // Get folders within the current directory
-  const folders = entries.filter(folder => folder.isDirectory());
-
-  for (const folder of folders)
-    /*
-      Add the found files within the subdirectory to the files array by calling the
-      current function itself
-    */
-    files.push(...await getFiles(`${path}${folder.name}/`));
-
-  return files;
-}
-
-async function getReplayFiles(path) {
-  let files = await getFiles(path);
-  //ends in .slp
-  let regExp = /.*\.slp$/;
-  let replays = files.filter(file => regExp.test(file.name));
-  return replays;
 }
 
 async function createDataWorkers() {
@@ -272,6 +153,7 @@ async function createDataWorkers() {
   const finalRange = range + ((max + 1) % threadCount);
   let start = 0;
   if (files.length > 0) {
+    mainWindow.webContents.send('startGameLoading', files.length);
     for (let i = 0; i < threadCount; i++) {
       const myStart = start;
       //final worker has to take remainder
@@ -295,7 +177,7 @@ async function createDataWorkers() {
         console.log(`Thread exiting, ${threads.size} running...`);
       });
       worker.on('message', (msg) => {
-        console.log(msg);
+        mainWindow.webContents.send('gameLoaded');
       })
     }
   }
@@ -343,4 +225,38 @@ function initDB() {
   conversionStmt.run();
   movesStmt.run();
   settingsStmt.run();
+}
+
+//get all files in all subdirectories
+async function getFiles(path = "./") {
+  const entries = fs.readdirSync(path, {
+    withFileTypes: true
+  });
+  // Get files within the current directory and add a path key to the file objects
+  const files = entries
+    .filter(file => !file.isDirectory())
+    .map(file => ({
+      ...file,
+      path: path + file.name
+    }));
+
+  // Get folders within the current directory
+  const folders = entries.filter(folder => folder.isDirectory());
+
+  for (const folder of folders)
+    /*
+      Add the found files within the subdirectory to the files array by calling the
+      current function itself
+    */
+    files.push(...await getFiles(`${path}${folder.name}/`));
+
+  return files;
+}
+
+async function getReplayFiles(path) {
+  let files = await getFiles(path);
+  //ends in .slp
+  let regExp = /.*\.slp$/;
+  let replays = files.filter(file => regExp.test(file.name));
+  return replays;
 }
