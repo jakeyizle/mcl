@@ -47,13 +47,9 @@
   "dependencies": {
     "@slippi/slippi-js": "^5.1.1",
     "better-sqlite3": "^7.4.3",
-    "bootstrap-vue": "^2.21.2",
-    "electron-db": "^0.15.7",
     "electron-photon": "^1.1.6",
     "electron-squirrel-startup": "^1.0.0",
-    "uuid": "^8.3.2",
-    "vue": "^2.6.12",
-    "vuetable-2": "^2.0.0-beta.4"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.54",
