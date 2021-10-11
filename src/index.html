@@ -24,14 +24,69 @@
       </div>
       <div class="pane">
         <div id="main" style="display:none">
-          hi mom
           <div id="progress" class="progress">
             <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
               aria-valuemax="0" style="width:0%">
             </div>
             <div id="progress-text"></div>
           </div>
+
+          <div id="searchForm">
+            <div>
+              Attacking Player Code: 
+              <input id="attackingPlayerCode" type="text" value="" placeholder="BLAH#123">
+            </div>
+            <div>
+              Attacking Character: 
+              <select name="attackingCharacter" id="attackingCharacter">
+                <option value="">Select a character</option>
+              </select>
+            </div>
+            <div>
+              Defending Player Code: 
+              <input id="defendingPlayerCode" type="text" value="" placeholder="BLAH#123">
+            </div>
+            <div>
+              Defending Character: 
+              <select name="defendingCharacter" id="defendingCharacter">
+                <option value="">Select a character</option>
+              </select>
+            </div>
+            <div>
+              Stage: 
+              <select name="stage" id="stage">
+                <option value="">Select a stage</option>
+              </select>            </div>
+            <div>
+              Did combo kill?: 
+              <input id="didKill" type="checkbox" value="">
+            </div>
+            <div>
+              Minimum damage done: 
+              <input id="minimumDamage" type="number" value="" placeholder="Minimum %">
+            </div>
+            <div>
+              <button id="searchButton" onclick="searchConversions()">Search Conversions</button>
+            </div>
+          </div>
         </div>
+          <table class="table-striped" id="searchTable">
+            <thead>
+              <tr>
+                <th>Attacking Player</th>
+                <th>Attacking Character</th>
+                <th>Defending Player</th>
+                <th>Defending Character</th>
+                <th>Stage</th>
+                <th>Percent</th>
+                <th>Frame Count</th>
+                <th>Did Kill?</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+
+          </table>
         <div id="settings" style="display:none">
           <div>
             <label>Replay Path:
@@ -58,9 +113,9 @@
             </label>
           </div>
 
+        </div>
       </div>
     </div>
-  </div>
 
   </window-content>
   <tool-bar type="footer">

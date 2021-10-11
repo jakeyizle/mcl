@@ -41,21 +41,8 @@ const createWindow = () => {
     createDataWorkers();
   })
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
 };
 
-const createSettingsWindow = () => {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-    }
-  });
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'settings.html'));
-};
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -65,11 +52,7 @@ app.on('ready', () => {
   //rename db -> settings/config
   isConfigValid().then((isConfigValid) => {
     console.log(`is config valid? - ${isConfigValid}`);
-    if (isConfigValid) {
-      createWindow();
-    } else {
-      createSettingsWindow();
-    }
+    createWindow();
   });
 });
 
