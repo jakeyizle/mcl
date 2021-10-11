@@ -4,16 +4,12 @@ const {
   ipcMain
 } = require('electron');
 const {
-  Worker,
-  isMainThread,
-  parentPort,
-  workerData
+  Worker
 } = require('worker_threads');
 
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { settings } = require('cluster');
 const db = require('better-sqlite3')('melee.db');
 db.pragma('journal_mode = WAL');
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.

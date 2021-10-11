@@ -4,6 +4,10 @@ const {
 const Photon = require("electron-photon");
 const {Characters, Stages, CharacterStrings, StageStrings} = require('../static/meleeIds.js');
 var currentFileNumber = 1;
+const { exec } = require("child_process");
+const fs = require('fs');
+const path = require('path');
+var spawn = require('child_process').spawn;    
 
 document.addEventListener("DOMContentLoaded", async function() {
   addNavElements();
@@ -66,6 +70,8 @@ function showAppAndHideOthers(elementId) {
 }
 
 function searchConversions() {
+  let tableBody = document.getElementById('tableBody');
+  tableBody.innerHTML = '';
   //TODO build query better
   let attackingPlayerCode = document.getElementById('attackingPlayerCode').value;
   let attackingCharacter = document.getElementById('attackingCharacter').value;
@@ -107,21 +113,25 @@ function searchConversions() {
     queryObject.minimumDamage = parseInt(minimumDamage);
   };
 
-  console.log(baseQuery)
-  console.log(queryObject);
   let query = db.prepare(baseQuery);
   let data = queryObject ? query.all(queryObject) : query.all();
   
-  let fields = ['attackingPlayer','attackingCharacter','defendingPlayer','defendingCharacter','stage','percent','time','didKill']
+  let fields = ['playReplay','attackingPlayer','attackingCharacter','defendingPlayer','defendingCharacter','stage','percent','time','didKill']
   let i = 0;
   for (let conversion of data) {
-    let tableBody = document.getElementById('tableBody');
     let row = document.createElement('tr');
     for (let field of fields) {
       let cell = document.createElement('td');
       if (field === 'attackingCharacter' ||field === 'defendingCharacter' || field === 'stage') {
         //translate from ID to name
         cell.innerHTML = field ==='stage' ? getKeyByValue(Stages, conversion[field]) : getKeyByValue(Characters, conversion[field]);
+      } else if (field === 'playReplay') {
+        let button = document.createElement("button");
+        button.innerHTML = "Play Replay";
+        button.addEventListener('click', () => {playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame)});
+        cell.appendChild(button);
+
+        
       } else {
         cell.innerHTML = conversion[field];
       }
@@ -163,4 +173,34 @@ function fileLoaded() {
 
 function getKeyByValue(object, value) {
   return Object.keys(object).find(key => object[key] === value);
+}
+
+function playConversion(filePath, startFrame, endFrame) {
+  const settingsStmt = db.prepare('SELECT value from settings where key = ?');
+  const playbackPath = settingsStmt.get('playbackPath').value;
+  const isoPath = settingsStmt.get('isoPath').value;
+    var output = {
+      "mode": "queue",
+      "replay": "",
+      "isRealTimeMode": false,
+      "outputOverlayFiles": true,
+      "queue": []
+      };
+      var queueMessage = {
+        "path":filePath,
+        "startFrame": startFrame,
+        "endFrame": endFrame
+      };
+      output.queue.push(queueMessage);     
+      let jsonPath = path.join(__dirname, "tempMoments.json");
+      //if i use the json directly it doesnt work, so have to write it to a file first
+      fs.writeFileSync(jsonPath, JSON.stringify(output));
+      var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}"`; 
+      console.log(replayCommand);
+
+      var dolphinProcess = exec(replayCommand);    
+      dolphinProcess.stdout.on('data', (line) =>{        
+        //we get [NO_GAME]            
+        spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+        })    
 }
