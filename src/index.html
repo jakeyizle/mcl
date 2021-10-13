@@ -33,36 +33,36 @@
 
           <div id="searchForm">
             <div>
-              Attacking Player Code: 
+              Attacking Player Code:
               <input id="attackingPlayerCode" type="text" value="" placeholder="BLAH#123">
             </div>
             <div>
-              Attacking Character: 
+              Attacking Character:
               <select name="attackingCharacter" id="attackingCharacter">
                 <option value="">Select a character</option>
               </select>
             </div>
             <div>
-              Defending Player Code: 
+              Defending Player Code:
               <input id="defendingPlayerCode" type="text" value="" placeholder="BLAH#123">
             </div>
             <div>
-              Defending Character: 
+              Defending Character:
               <select name="defendingCharacter" id="defendingCharacter">
                 <option value="">Select a character</option>
               </select>
             </div>
             <div>
-              Stage: 
+              Stage:
               <select name="stage" id="stage">
                 <option value="">Select a stage</option>
-              </select>            </div>
+              </select> </div>
             <div>
-              Did combo kill?: 
+              Did combo kill?:
               <input id="didKill" type="checkbox" value="">
             </div>
             <div>
-              Minimum damage done: 
+              Minimum damage done:
               <input id="minimumDamage" type="number" value="" placeholder="Minimum %">
             </div>
             <div>
@@ -71,46 +71,45 @@
           </div>
           <table class="table-striped" id="searchTable">
             <thead>
-              <tr>
-                <th>Replay</th>
-                <th>Attacking Player</th>
-                <th>Attacking Character</th>
-                <th>Defending Player</th>
-                <th>Defending Character</th>
-                <th>Stage</th>
-                <th>Percent</th>
-                <th>Frame Count</th>
-                <th>Did Kill?</th>
+              <tr id="tableHeader">
               </tr>
             </thead>
             <tbody id="tableBody">
             </tbody>
 
           </table>
+          <div id="pageNumbers" style="display:none">
+            <button id="firstPage" onclick="clearAndCreateRows(1)">First Page</button>
+            <button id="previousPage" onclick="clearAndCreateRows(pageNumber - 1)">Previous Page</button>
+            <span id="pageNumber"></span>
+            <button id="nextPage" onclick="clearAndCreateRows(pageNumber + 1)">Next Page</button>            
+            <button id="lastPage" onclick="clearAndCreateRows(conversions.length/20)">Last Page</button>
+
+          </div>
         </div>
 
         <div id="settings" style="display:none">
           <div>
             Replay Path:
-              <label id="replayPath"></label>
-              <button id="replayButton" onclick="document.getElementById('replaySelector').click()">Select Replay
-                Folder</button>
-              <input type="file" id="replaySelector" webkitdirectory hidden />
+            <label id="replayPath"></label>
+            <button id="replayButton" onclick="document.getElementById('replaySelector').click()">Select Replay
+              Folder</button>
+            <input type="file" id="replaySelector" webkitdirectory hidden />
 
           </div>
           <div>
             Melee Iso Path:
-              <label id="isoPath"></label>
-              <button id="isoButton" onclick="document.getElementById('isoSelector').click()">Select SSBM ISO
-                Path</button>
-              <input type="file" id="isoSelector" accept=".iso" hidden />
+            <label id="isoPath"></label>
+            <button id="isoButton" onclick="document.getElementById('isoSelector').click()">Select SSBM ISO
+              Path</button>
+            <input type="file" id="isoSelector" accept=".iso" hidden />
           </div>
           <div>
             Playback Dolphin Path:
-              <label id="playbackPath"></label>
-              <button id="playbackButton" onclick="document.getElementById('playbackSelector').click()">Select Playback
-                Dolphin path</button>
-              <input type="file" id="playbackSelector" accept=".exe" hidden />
+            <label id="playbackPath"></label>
+            <button id="playbackButton" onclick="document.getElementById('playbackSelector').click()">Select Playback
+              Dolphin path</button>
+            <input type="file" id="playbackSelector" accept=".exe" hidden />
           </div>
 
         </div>
@@ -124,7 +123,7 @@
 
   <script src="mainRenderer.js"></script>
   <script src="settings.js"></script>
-
+  <script src="searchResults.js"></script>
   </body>
 </ph-window>
 
