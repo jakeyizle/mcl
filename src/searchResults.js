@@ -1,6 +1,8 @@
 var conversions;
 var pageNumber = 1;
 var currentSortField;
+var moveQuery = db.prepare('SELECT COUNT(conversionMoveId) FROM moves WHERE conversionId = ?').pluck();
+
 function searchConversions() {
     //TODO build query better
     let attackingPlayerCode = document.getElementById('attackingPlayerCode').value;
@@ -44,24 +46,29 @@ function searchConversions() {
         queryObject.minimumDamage = parseInt(minimumDamage);
     };
 
+
     let query = db.prepare(baseQuery);
     conversions = queryObject ? query.all(queryObject) : query.all();
-
+    //this is crazy slow
+    // conversions.forEach(conversion => {
+    //     conversions.moveCount = moveQuery.get(conversion.id);
+    // })
     clearAndCreateRows(1);
     document.getElementById('pageNumbers').style.display = 'block';
+    currentSortField = '';
 }
 
 function sortConversions(field) {
     //sort by desc by default
 
 
-    if (currentSortField) {
-        conversions = conversions.reverse()
+    if (currentSortField == field) {
+        conversions = conversions.map(conversions.pop,[...conversions]);
     } else {
         conversions = conversions.sort((a, b) => {
             return b[field] - a[field];
         })
-    }   
+    }
     clearAndCreateRows();
 
     currentSortField = field;
@@ -70,15 +77,15 @@ function sortConversions(field) {
 
 function clearAndCreateRows(newPageNumber) {
     //page number logic
-    pageNumber = newPageNumber || pageNumber;    
+    pageNumber = newPageNumber || pageNumber;
     document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${conversions.length/20}`;
     if (pageNumber == 1) {
         document.getElementById('previousPage').disabled = 'true';
     } else {
         document.getElementById('previousPage').removeAttribute('disabled');
     }
-    if (pageNumber === conversions.length/20) {
-        document.getElementById('nextPage').disabled ='true';        
+    if (pageNumber === conversions.length / 20) {
+        document.getElementById('nextPage').disabled = 'true';
     } else {
         document.getElementById('nextPage').removeAttribute('disabled');
 
@@ -87,7 +94,7 @@ function clearAndCreateRows(newPageNumber) {
     //table and row creation
     let tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '';
-    let fields = ['playReplay', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill']
+    let fields = ['playReplay', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
     let header = document.getElementById('tableHeader');
     header.innerHTML = '';
     for (let field of fields) {
@@ -100,17 +107,12 @@ function clearAndCreateRows(newPageNumber) {
         header.appendChild(headerElement);
     }
 
-
-
     //20 = items per page
     let min = (pageNumber - 1) * 20;
     let max = min + 20;
     for (let i = min; i < max; i++) {
-
-
         let row = document.createElement('tr');
         for (let field of fields) {
-
             //table body logic
             let cell = document.createElement('td');
             if (field === 'attackingCharacter' || field === 'defendingCharacter' || field === 'stage') {

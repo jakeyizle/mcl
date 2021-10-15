@@ -26,7 +26,7 @@ if (isMainThread) {
         let end = start + range;
 
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
-        const insertConversion = db.prepare("INSERT INTO conversions (id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
+        const insertConversion = db.prepare("INSERT INTO conversions (moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (conversionId,moveId,frame,hitCount,damage) VALUES (@conversionId,@moveId,@frame,@hitCount,@damage)");
 
         for (let i = start; i < end; i++) {
@@ -54,6 +54,7 @@ if (isMainThread) {
                     conversions[j].opponentIndex = defendingIndex;
                     conversions[j].didKill = conversions[j].didKill ? 1 : 0;
                     conversions[j].id = uuidv4();
+                    conversions[j].moveCount = conversions[j].moves.length;
                     conversions[j].moves.forEach(move => {
                         move.conversionId = conversions[j].id;
                     })
