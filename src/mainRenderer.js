@@ -4,10 +4,7 @@ const {
 const Photon = require("electron-photon");
 const {Characters, Stages, CharacterStrings, StageStrings} = require('../static/meleeIds.js');
 var currentFileNumber = 1;
-const { exec } = require("child_process");
-const fs = require('fs');
-const path = require('path');
-var spawn = require('child_process').spawn;    
+
 
 document.addEventListener("DOMContentLoaded", async function() {
   addNavElements();
@@ -49,7 +46,6 @@ function addNavElements() {
     let navItemElement = document.createElement('nav-item');
     navItemElement.setAttribute("id", navItem+'nav');
     navItemElement.innerHTML = navItem;
-
 
     navItemElement.addEventListener('click', () => {
       showAppAndHideOthers(navItem);

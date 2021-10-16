@@ -1,8 +1,13 @@
+//this is probably indicative of bad design
 var conversions;
-var currentSortField;
 var pageNumber;
 const countStmt = db.prepare('SELECT COUNT (*) FROM conversions').pluck();
 var itemsPerPage = 20;
+var baseQuery;
+var maxPageCount;
+var sortField = 'id';
+var sortDir = 'ASC';
+var previousCountQuery;
 
 function searchConversions(newPageNumber = 1) {
     pageNumber = newPageNumber;
@@ -18,6 +23,7 @@ function searchConversions(newPageNumber = 1) {
     let minimumDamage = document.getElementById('minimumDamage').value;
     // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
 
+    //dynamic search solution
     let queryObject = {};
 
     let baseQuery = 'SELECT * FROM conversions WHERE 1=1';
@@ -50,18 +56,28 @@ function searchConversions(newPageNumber = 1) {
         baseQuery += ' AND percent >= @minimumDamage'
         queryObject.minimumDamage = parseInt(minimumDamage);
     };
-    baseQuery += ` LIMIT ${itemsPerPage} OFFSET ${offset}`
+
+    //Paging with SQL for performance
+    //temphack
+    // if (sortField === 'id') { sortDir = 'ASC';}
+    baseQuery += ` ORDER BY ${sortField} ${sortDir} LIMIT ${itemsPerPage} OFFSET ${offset}`
     console.log(baseQuery);
     let query = db.prepare(baseQuery);
     conversions = queryObject ? query.all(queryObject) : query.all();
 
-    clearAndCreateRows();
-    document.getElementById('pageNumbers').style.display = 'block';
-    currentSortField = '';
 
-    //temporarily moving arrow logic here
+    document.getElementById('pageNumbers').style.display = 'block';
+
     //page number logic
-    let maxPageCount = getMaxPageCount(itemsPerPage);
+    let regex = /ORDER.*/;
+    let tempQuery = baseQuery.replace(regex, '');
+    let countQuery = tempQuery.replace('SELECT *', 'SELECT COUNT(id)');
+    console.log(countQuery);
+    //this is slow to run every time therefore caching solution
+    if (!(previousCountQuery === countQuery)) {
+        let count = queryObject ? db.prepare(countQuery).pluck().get(queryObject) : db.prepare(countQuery).pluck().get();
+        maxPageCount = Math.ceil(count / itemsPerPage);
+    }
     document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${maxPageCount}`;
     if (pageNumber == 1) {
         document.getElementById('previousPage').disabled = 'true';
@@ -74,21 +90,17 @@ function searchConversions(newPageNumber = 1) {
         document.getElementById('nextPage').removeAttribute('disabled');
     }
 
-
+    clearAndCreateRows();
+    previousCountQuery = countQuery;
 }
 
-function sortConversions(field) {
-    //sort by desc by default
-    if (currentSortField == field) {
-        conversions = conversions.map(conversions.pop, [...conversions]);
-    } else {
-        conversions = conversions.sort((a, b) => {
-            return b[field] - a[field];
-        })
+function setConversionSort(newSortField) {
+    if (sortField === newSortField) {
+        sortDir = sortDir === 'ASC' ? 'DESC' : 'ASC';
     }
-    clearAndCreateRows();
+    sortField = newSortField;
 
-    currentSortField = field;
+    searchConversions(pageNumber);
 }
 
 
@@ -105,7 +117,7 @@ function clearAndCreateRows() {
         let headerElement = document.createElement('th');
         headerElement.innerHTML = field;
         headerElement.addEventListener('click', () => {
-            sortConversions(field);
+            setConversionSort(field);
         });
         header.appendChild(headerElement);
     }
@@ -133,11 +145,6 @@ function clearAndCreateRows() {
         }
         tableBody.appendChild(row);
     }
-}
-
-function getMaxPageCount() {
-    let count = countStmt.get();
-    return Math.ceil(count / itemsPerPage);
 }
 
 function playConversion(filePath, startFrame, endFrame) {
@@ -173,4 +180,4 @@ function playConversion(filePath, startFrame, endFrame) {
 
 function getKeyByValue(object, value) {
     return Object.keys(object).find(key => object[key] === value);
-  }
+}

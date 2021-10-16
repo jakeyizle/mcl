@@ -6,7 +6,6 @@ const {
 const {
     default: SlippiGame
 } = require('@slippi/slippi-js');
-const fs = require('fs');
 const db = require('better-sqlite3')('melee.db');
 const {
     v4: uuidv4
