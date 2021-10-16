@@ -6,7 +6,7 @@ var itemsPerPage = 20;
 
 function searchConversions(newPageNumber = 1) {
     pageNumber = newPageNumber;
-    let offset = (pageNumber-1)*20;
+    let offset = (pageNumber - 1) * itemsPerPage;
 
     //TODO build query better
     let attackingPlayerCode = document.getElementById('attackingPlayerCode').value;
@@ -54,17 +54,14 @@ function searchConversions(newPageNumber = 1) {
     console.log(baseQuery);
     let query = db.prepare(baseQuery);
     conversions = queryObject ? query.all(queryObject) : query.all();
-    //this is crazy slow
-    // conversions.forEach(conversion => {
-    //     conversions.moveCount = moveQuery.get(conversion.id);
-    // })
+
     clearAndCreateRows();
     document.getElementById('pageNumbers').style.display = 'block';
     currentSortField = '';
 
     //temporarily moving arrow logic here
     //page number logic
-    let maxPageCount = getMaxPageCount(itemsPerPage);    
+    let maxPageCount = getMaxPageCount(itemsPerPage);
     document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${maxPageCount}`;
     if (pageNumber == 1) {
         document.getElementById('previousPage').disabled = 'true';
@@ -75,7 +72,6 @@ function searchConversions(newPageNumber = 1) {
         document.getElementById('nextPage').disabled = 'true';
     } else {
         document.getElementById('nextPage').removeAttribute('disabled');
-
     }
 
 
@@ -97,15 +93,15 @@ function sortConversions(field) {
 
 
 function clearAndCreateRows() {
-
     //table and row creation
     let tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '';
+    //columns - match to conversion properties or custom logic
     let fields = ['playReplay', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
     let header = document.getElementById('tableHeader');
     header.innerHTML = '';
     for (let field of fields) {
-        //table header
+        //add header, and sort onclick
         let headerElement = document.createElement('th');
         headerElement.innerHTML = field;
         headerElement.addEventListener('click', () => {
@@ -114,7 +110,7 @@ function clearAndCreateRows() {
         header.appendChild(headerElement);
     }
 
-
+    //create rows with data
     for (let conversion of conversions) {
         let row = document.createElement('tr');
         for (let field of fields) {
@@ -143,3 +139,38 @@ function getMaxPageCount() {
     let count = countStmt.get();
     return Math.ceil(count / itemsPerPage);
 }
+
+function playConversion(filePath, startFrame, endFrame) {
+    const settingsStmt = db.prepare('SELECT value from settings where key = ?');
+    const playbackPath = settingsStmt.get('playbackPath').value;
+    const isoPath = settingsStmt.get('isoPath').value;
+    var output = {
+        "mode": "queue",
+        "replay": "",
+        "isRealTimeMode": false,
+        "outputOverlayFiles": true,
+        "queue": []
+    };
+    var queueMessage = {
+        "path": filePath,
+        "startFrame": startFrame,
+        "endFrame": endFrame
+    };
+    output.queue.push(queueMessage);
+    let jsonPath = path.join(__dirname, "tempMoments.json");
+    //if i use the json directly it doesnt work, so have to write it to a file first
+    fs.writeFileSync(jsonPath, JSON.stringify(output));
+    //pretty sure only the -i and -e are needed?
+    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}"`;
+    console.log(replayCommand);
+
+    var dolphinProcess = exec(replayCommand);
+    dolphinProcess.stdout.on('data', (line) => {
+        //we get [NO_GAME]            
+        spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+    })
+}
+
+function getKeyByValue(object, value) {
+    return Object.keys(object).find(key => object[key] === value);
+  }
