@@ -1,8 +1,12 @@
 var conversions;
 var currentSortField;
+var pageNumber;
+const countStmt = db.prepare('SELECT COUNT (*) FROM conversions').pluck();
+var itemsPerPage = 20;
 
-function searchConversions(pageNumber = 1) {
-    let offset = pageNumber - 1;
+function searchConversions(newPageNumber = 1) {
+    pageNumber = newPageNumber;
+    let offset = (pageNumber-1)*20;
 
     //TODO build query better
     let attackingPlayerCode = document.getElementById('attackingPlayerCode').value;
@@ -13,7 +17,6 @@ function searchConversions(pageNumber = 1) {
     let didKill = document.getElementById('didKill').checked;
     let minimumDamage = document.getElementById('minimumDamage').value;
     // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
-    let itemsPerPage = 20;
 
     let queryObject = {};
 
@@ -55,15 +58,33 @@ function searchConversions(pageNumber = 1) {
     // conversions.forEach(conversion => {
     //     conversions.moveCount = moveQuery.get(conversion.id);
     // })
-    clearAndCreateRows(pageNumber);
+    clearAndCreateRows();
     document.getElementById('pageNumbers').style.display = 'block';
     currentSortField = '';
+
+    //temporarily moving arrow logic here
+    //page number logic
+    let maxPageCount = getMaxPageCount(itemsPerPage);    
+    document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${maxPageCount}`;
+    if (pageNumber == 1) {
+        document.getElementById('previousPage').disabled = 'true';
+    } else {
+        document.getElementById('previousPage').removeAttribute('disabled');
+    }
+    if (pageNumber === maxPageCount) {
+        document.getElementById('nextPage').disabled = 'true';
+    } else {
+        document.getElementById('nextPage').removeAttribute('disabled');
+
+    }
+
+
 }
 
 function sortConversions(field) {
     //sort by desc by default
     if (currentSortField == field) {
-        conversions = conversions.map(conversions.pop,[...conversions]);
+        conversions = conversions.map(conversions.pop, [...conversions]);
     } else {
         conversions = conversions.sort((a, b) => {
             return b[field] - a[field];
@@ -75,20 +96,7 @@ function sortConversions(field) {
 }
 
 
-function clearAndCreateRows(pageNumber) {
-    //page number logic    
-    document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${conversions.length/20}`;
-    if (pageNumber == 1) {
-        document.getElementById('previousPage').disabled = 'true';
-    } else {
-        document.getElementById('previousPage').removeAttribute('disabled');
-    }
-    if (pageNumber === conversions.length / 20) {
-        document.getElementById('nextPage').disabled = 'true';
-    } else {
-        document.getElementById('nextPage').removeAttribute('disabled');
-
-    }
+function clearAndCreateRows() {
 
     //table and row creation
     let tableBody = document.getElementById('tableBody');
@@ -106,7 +114,7 @@ function clearAndCreateRows(pageNumber) {
         header.appendChild(headerElement);
     }
 
- 
+
     for (let conversion of conversions) {
         let row = document.createElement('tr');
         for (let field of fields) {
@@ -129,4 +137,9 @@ function clearAndCreateRows(pageNumber) {
         }
         tableBody.appendChild(row);
     }
+}
+
+function getMaxPageCount() {
+    let count = countStmt.get();
+    return Math.ceil(count / itemsPerPage);
 }

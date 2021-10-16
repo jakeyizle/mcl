@@ -79,11 +79,11 @@
 
           </table>
           <div id="pageNumbers" style="display:none">
-            <button id="firstPage" onclick="clearAndCreateRows(1)">First Page</button>
-            <button id="previousPage" onclick="clearAndCreateRows(pageNumber - 1)">Previous Page</button>
+            <button id="firstPage" onclick="searchConversions(1)">First Page</button>
+            <button id="previousPage" onclick="searchConversions(pageNumber - 1)">Previous Page</button>
             <span id="pageNumber"></span>
-            <button id="nextPage" onclick="clearAndCreateRows(pageNumber + 1)">Next Page</button>            
-            <button id="lastPage" onclick="clearAndCreateRows(conversions.length/20)">Last Page</button>
+            <button id="nextPage" onclick="searchConversions(pageNumber + 1)">Next Page</button>            
+            <button id="lastPage" onclick="searchConversions(getMaxPageCount())">Last Page</button>
 
           </div>
         </div>
