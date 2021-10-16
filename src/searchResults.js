@@ -1,9 +1,9 @@
 var conversions;
-var pageNumber = 1;
 var currentSortField;
-var moveQuery = db.prepare('SELECT COUNT(conversionMoveId) FROM moves WHERE conversionId = ?').pluck();
 
-function searchConversions() {
+function searchConversions(pageNumber = 1) {
+    let offset = pageNumber - 1;
+
     //TODO build query better
     let attackingPlayerCode = document.getElementById('attackingPlayerCode').value;
     let attackingCharacter = document.getElementById('attackingCharacter').value;
@@ -12,6 +12,8 @@ function searchConversions() {
     let stage = document.getElementById('stage').value;
     let didKill = document.getElementById('didKill').checked;
     let minimumDamage = document.getElementById('minimumDamage').value;
+    // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
+    let itemsPerPage = 20;
 
     let queryObject = {};
 
@@ -45,23 +47,21 @@ function searchConversions() {
         baseQuery += ' AND percent >= @minimumDamage'
         queryObject.minimumDamage = parseInt(minimumDamage);
     };
-
-
+    baseQuery += ` LIMIT ${itemsPerPage} OFFSET ${offset}`
+    console.log(baseQuery);
     let query = db.prepare(baseQuery);
     conversions = queryObject ? query.all(queryObject) : query.all();
     //this is crazy slow
     // conversions.forEach(conversion => {
     //     conversions.moveCount = moveQuery.get(conversion.id);
     // })
-    clearAndCreateRows(1);
+    clearAndCreateRows(pageNumber);
     document.getElementById('pageNumbers').style.display = 'block';
     currentSortField = '';
 }
 
 function sortConversions(field) {
     //sort by desc by default
-
-
     if (currentSortField == field) {
         conversions = conversions.map(conversions.pop,[...conversions]);
     } else {
@@ -75,9 +75,8 @@ function sortConversions(field) {
 }
 
 
-function clearAndCreateRows(newPageNumber) {
-    //page number logic
-    pageNumber = newPageNumber || pageNumber;
+function clearAndCreateRows(pageNumber) {
+    //page number logic    
     document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${conversions.length/20}`;
     if (pageNumber == 1) {
         document.getElementById('previousPage').disabled = 'true';
@@ -107,26 +106,24 @@ function clearAndCreateRows(newPageNumber) {
         header.appendChild(headerElement);
     }
 
-    //20 = items per page
-    let min = (pageNumber - 1) * 20;
-    let max = min + 20;
-    for (let i = min; i < max; i++) {
+ 
+    for (let conversion of conversions) {
         let row = document.createElement('tr');
         for (let field of fields) {
             //table body logic
             let cell = document.createElement('td');
             if (field === 'attackingCharacter' || field === 'defendingCharacter' || field === 'stage') {
                 //translate from ID to name
-                cell.innerHTML = field === 'stage' ? getKeyByValue(Stages, conversions[i][field]) : getKeyByValue(Characters, conversions[i][field]);
+                cell.innerHTML = field === 'stage' ? getKeyByValue(Stages, conversion[field]) : getKeyByValue(Characters, conversion[field]);
             } else if (field === 'playReplay') {
                 let button = document.createElement("button");
                 button.innerHTML = "Play Replay";
                 button.addEventListener('click', () => {
-                    playConversion(conversions[i].filepath, conversions[i].startFrame, conversions[i].endFrame)
+                    playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame)
                 });
                 cell.appendChild(button);
             } else {
-                cell.innerHTML = conversions[i][field];
+                cell.innerHTML = conversion[field];
             }
             row.appendChild(cell);
         }
