@@ -144,7 +144,6 @@ function clearAndCreateRows() {
                 for (let playlist of playlists) {
                     let option = createDropdownOption(playlist, playlist);
                     let playlistConversion = db.prepare('SELECT * FROM playlistConversion WHERE playlistName = ? and conversionId = ?').all(playlist, conversion.id);
-                    console.log(playlistConversion);
                     if (playlistConversion.length > 0) {option.setAttribute('selected', true)}
                     conversionPlaylistDropdown.appendChild(option);
                 }
@@ -164,9 +163,7 @@ function clearAndCreateRows() {
               onChange:function(checked, value, instance) {
                   let playlistConversionQuery = checked ? 'INSERT INTO playlistConversion (playlistName, conversionId) VALUES (?, ?)' 
                     : 'DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?';
-                console.log(playlistConversionQuery);
                   let query = db.prepare(playlistConversionQuery).run(value, conversion.id);
-                  //if checked -> add to 
               },
               placeholder:'Assign playlists'
             }

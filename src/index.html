@@ -28,7 +28,7 @@
               aria-valuemax="0" style="width:0%">
             </div>
             <div id="progress-text"></div>
-          </div>          
+          </div>
           <div id="searchForm">
             <div>
               Attacking Player Code:
@@ -74,13 +74,12 @@
             </thead>
             <tbody id="tableBody">
             </tbody>
-
           </table>
           <div id="pageNumbers" style="display:none">
             <button id="firstPage" onclick="searchConversions(1)">First Page</button>
             <button id="previousPage" onclick="searchConversions(pageNumber - 1)">Previous Page</button>
             <span id="pageNumber"></span>
-            <button id="nextPage" onclick="searchConversions(pageNumber + 1)">Next Page</button>            
+            <button id="nextPage" onclick="searchConversions(pageNumber + 1)">Next Page</button>
             <button id="lastPage" onclick="searchConversions(maxPageCount)">Last Page</button>
 
           </div>
@@ -113,17 +112,22 @@
         </div>
         <div id="playlists" style="display:none">
           <div>
-          Playlist Name:  
-          <input type="text" id="playlistName" value="" placeholder="Enter new playlist name">
-        </div>
-        Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
-          <option value = "">Select or Create a playlist</option>
-        </select>
-        <div>
-          <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
+            Playlist Name:
+            <input type="text" id="playlistName" value="" placeholder="Enter new playlist name">
+          </div>
+          Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
+            <option value="">Select or Create a playlist</option>
+          </select>
+          <table class="table-striped" id="playlistTable">              
+            <thead>
+              <tr id="playlistTableHeader">
+              </tr>
+            </thead>
+            <tbody id="playlistTableBody">
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
 
   </window-content>
 
