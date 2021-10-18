@@ -1,9 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+const { exec, spawn } = require('child_process');
+
 //this is probably indicative of bad design
 var conversions;
 var pageNumber;
-const countStmt = db.prepare('SELECT COUNT (*) FROM conversions').pluck();
 var itemsPerPage = 20;
-var baseQuery;
 var maxPageCount;
 var sortField = 'id';
 var sortDir = 'ASC';
@@ -58,10 +60,8 @@ function searchConversions(newPageNumber = 1) {
     };
 
     //Paging with SQL for performance
-    //temphack
-    // if (sortField === 'id') { sortDir = 'ASC';}
+    //seems to get slow when offset is large and there are where conditions
     baseQuery += ` ORDER BY ${sortField} ${sortDir} LIMIT ${itemsPerPage} OFFSET ${offset}`
-    console.log(baseQuery);
     let query = db.prepare(baseQuery);
     conversions = queryObject ? query.all(queryObject) : query.all();
 
@@ -69,10 +69,10 @@ function searchConversions(newPageNumber = 1) {
     document.getElementById('pageNumbers').style.display = 'block';
 
     //page number logic
+    //probably should just create 2 separate queries and add the WHERE clauses instead of this
     let regex = /ORDER.*/;
     let tempQuery = baseQuery.replace(regex, '');
     let countQuery = tempQuery.replace('SELECT *', 'SELECT COUNT(id)');
-    console.log(countQuery);
     //this is slow to run every time therefore caching solution
     if (!(previousCountQuery === countQuery)) {
         let count = queryObject ? db.prepare(countQuery).pluck().get(queryObject) : db.prepare(countQuery).pluck().get();
@@ -89,7 +89,6 @@ function searchConversions(newPageNumber = 1) {
     } else {
         document.getElementById('nextPage').removeAttribute('disabled');
     }
-
     clearAndCreateRows();
     previousCountQuery = countQuery;
 }
@@ -99,17 +98,15 @@ function setConversionSort(newSortField) {
         sortDir = sortDir === 'ASC' ? 'DESC' : 'ASC';
     }
     sortField = newSortField;
-
     searchConversions(pageNumber);
 }
-
 
 function clearAndCreateRows() {
     //table and row creation
     let tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '';
     //columns - match to conversion properties or custom logic
-    let fields = ['playReplay', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
+    let fields = ['playList', 'playReplay', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
     let header = document.getElementById('tableHeader');
     header.innerHTML = '';
     for (let field of fields) {
@@ -123,9 +120,11 @@ function clearAndCreateRows() {
     }
 
     //create rows with data
+    let playlists = db.prepare('SELECT name FROM playlists').pluck().all();
+    let i = 0;
     for (let conversion of conversions) {
         let row = document.createElement('tr');
-        for (let field of fields) {
+        for (let field of fields) {            
             //table body logic
             let cell = document.createElement('td');
             if (field === 'attackingCharacter' || field === 'defendingCharacter' || field === 'stage') {
@@ -138,12 +137,42 @@ function clearAndCreateRows() {
                     playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame)
                 });
                 cell.appendChild(button);
-            } else {
+            } else if (field === 'playList') {
+                let conversionPlaylistDropdown = document.createElement('select');
+                conversionPlaylistDropdown.setAttribute('id',`playlist-id-${i}`);
+                conversionPlaylistDropdown.setAttribute('multiple', 'multiple');
+                for (let playlist of playlists) {
+                    let option = createDropdownOption(playlist, playlist);
+                    let playlistConversion = db.prepare('SELECT * FROM playlistConversion WHERE playlistName = ? and conversionId = ?').all(playlist, conversion.id);
+                    console.log(playlistConversion);
+                    if (playlistConversion.length > 0) {option.setAttribute('selected', true)}
+                    conversionPlaylistDropdown.appendChild(option);
+                }
+                cell.appendChild(conversionPlaylistDropdown);                            
+            }
+            else {
                 cell.innerHTML = conversion[field];
             }
-            row.appendChild(cell);
+            row.appendChild(cell);            
         }
         tableBody.appendChild(row);
+        var select = new MSFmultiSelect(
+            document.querySelector(`#playlist-id-${i}`),
+            {
+              selectAll: true,
+              searchBox: true,
+              onChange:function(checked, value, instance) {
+                  let playlistConversionQuery = checked ? 'INSERT INTO playlistConversion (playlistName, conversionId) VALUES (?, ?)' 
+                    : 'DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?';
+                console.log(playlistConversionQuery);
+                  let query = db.prepare(playlistConversionQuery).run(value, conversion.id);
+                  //if checked -> add to 
+              },
+              placeholder:'Assign playlists'
+            }
+          );
+        i++;
+
     }
 }
 

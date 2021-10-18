@@ -51,6 +51,7 @@
     "electron-photon": "^1.1.6",
     "electron-squirrel-startup": "^1.0.0",
     "exec": "^0.2.1",
+    "msfmultiselect": "^2.4.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

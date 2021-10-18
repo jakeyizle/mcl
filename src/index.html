@@ -10,12 +10,11 @@
     <title>Hello World!</title>
     <link rel="stylesheet" href="index.css">
 
-
+    <script src="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.css" rel="stylesheet">
   </head>
 
-  <tool-bar type="header">
-    Toolbar Header
-  </tool-bar>
+
   <window-content>
     <div class="pane-group">
       <div class="pane-sm sidebar">
@@ -29,8 +28,7 @@
               aria-valuemax="0" style="width:0%">
             </div>
             <div id="progress-text"></div>
-          </div>
-
+          </div>          
           <div id="searchForm">
             <div>
               Attacking Player Code:
@@ -113,17 +111,27 @@
           </div>
 
         </div>
+        <div id="playlists" style="display:none">
+          <div>
+          Playlist Name:  
+          <input type="text" id="playlistName" value="" placeholder="Enter new playlist name">
+        </div>
+        Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
+          <option value = "">Select or Create a playlist</option>
+        </select>
+        <div>
+          <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
+        </div>
       </div>
     </div>
 
   </window-content>
-  <tool-bar type="footer">
-    Footer Header
-  </tool-bar>
+
 
   <script src="mainRenderer.js"></script>
   <script src="settings.js"></script>
   <script src="searchResults.js"></script>
+  <script src="playlists.js"></script>
   </body>
 </ph-window>
 

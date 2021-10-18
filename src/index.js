@@ -200,10 +200,23 @@ function initDB() {
     key Primary Key,
     value
   )`);
+  const playlistStmt = db.prepare(`CREATE TABLE IF NOT EXISTS playlists (
+    name Primary Key
+  )`);
+  const playlistConversionStmt = db.prepare(`CREATE TABLE IF NOT EXISTS playlistConversion (
+    playlistName,
+    conversionId,
+    playlistPosition,
+    PRIMARY KEY (playlistName, conversionId),
+    FOREIGN KEY (playlistName) REFERENCES playlists(name),
+    FOREIGN KEY (conversionId) REFERENCES conversions(id)
+  )`);
   gameStmt.run();
   conversionStmt.run();
   movesStmt.run();
   settingsStmt.run();
+  playlistStmt.run();
+  playlistConversionStmt.run();
 }
 
 //get all files in all subdirectories

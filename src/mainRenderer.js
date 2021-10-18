@@ -5,14 +5,12 @@ const Photon = require("electron-photon");
 const {Characters, Stages, CharacterStrings, StageStrings} = require('../static/meleeIds.js');
 var currentFileNumber = 1;
 
-
 document.addEventListener("DOMContentLoaded", async function() {
   addNavElements();
-  populateDropdowns();
-
+  populateDropdowns();  
 });
 
-const applicationIds = ['settings', 'main'];
+const applicationIds = ['settings', 'main', 'playlists'];
 
 
 //dont want to clutter the html more than i am
@@ -20,23 +18,24 @@ function populateDropdowns() {
   let characterDropwndowns = ['attackingCharacter', 'defendingCharacter'];
   for (let characterDropdown of characterDropwndowns) {
     let dropdown = document.getElementById(characterDropdown);
-    for (let character of CharacterStrings) {    
-      let option = document.createElement('option');
-
-      option.setAttribute('value', Characters[character]);
-      option.text = character;
+    for (let character of CharacterStrings.sort()) {    
+      let option = createDropdownOption(Characters[character], character);      
       dropdown.appendChild(option);
-    }
-    
+    }    
   }
+
   let stageDropdown = document.getElementById('stage');
-  for (let stage of StageStrings) {
-    let option = document.createElement('option');
-    option.setAttribute('value', Stages[stage]);
-    option.text = stage;
+  for (let stage of StageStrings.sort()) {
+    let option = createDropdownOption(Stages[stage], stage);
     stageDropdown.appendChild(option);
   }
 
+  let playlistDropdown = document.getElementById('playlistDropdown');
+  let playlists = db.prepare('SELECT * from playlists').all();
+  for (let playlist of playlists) {
+    let option = createDropdownOption(playlist.name, playlist.name);
+    playlistDropdown.appendChild(option);
+  }
 }
 
 //doing this instead of hardcoding the nav elements
@@ -90,4 +89,9 @@ function fileLoaded() {
   progressBar.ariaValueNow = currentFileNumber;
 }
 
-
+function createDropdownOption(value, text) {
+  let option = document.createElement('option');
+  option.setAttribute('value', value);
+  option.text = text;
+  return option
+}

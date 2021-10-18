@@ -57,6 +57,7 @@ if (isMainThread) {
                     conversions[j].moves.forEach(move => {
                         move.conversionId = conversions[j].id;
                     })
+                    //copy by value
                     moves = moves.concat(conversions[j].moves);
                 }
                 insertGame.run(files[i]);
