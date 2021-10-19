@@ -153,7 +153,7 @@ function clearAndCreateRows() {
                 let button = document.createElement("button");
                 button.innerHTML = "Play Replay";
                 button.addEventListener('click', () => {
-                    playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame);
+                    playConversions([conversion]);
                 });
                 cell.appendChild(button);
             } else if (field === 'playList') {
@@ -197,6 +197,8 @@ function playConversions(conversions) {
     const settingsStmt = db.prepare('SELECT value from settings where key = ?');
     const playbackPath = settingsStmt.get('playbackPath').value;
     const isoPath = settingsStmt.get('isoPath').value;
+    const preRoll = settingsStmt.get('preRoll').value || 0;
+    const postRoll = settingsStmt.get('postRoll').value || 0;
     var output = {
         "mode": "queue",
         "replay": "",
@@ -204,70 +206,33 @@ function playConversions(conversions) {
         "outputOverlayFiles": true,
         "queue": []
     };
-    for (let conversion of conversions) {
-        var queueMessage = {
-            "path": conversion.filepath,
-            "startFrame": conversion.startFrame,
-            "endFrame": conversion.endFrame
-        };
-        output.queue.push(queueMessage);
-    }
+        for (let conversion of conversions) {
+            let startFrame = conversion.startFrame - preRoll;
+            let endFrame = conversion.endFrame + parseInt(postRoll);
+            console.log(startFrame, endFrame);
+            var queueMessage = {
+                "path": conversion.filepath,
+                "startFrame": startFrame,
+                "endFrame": endFrame
+            };
+            output.queue.push(queueMessage);
+        }
+    
 
     let jsonPath = path.join(__dirname, "tempMoments.json");
     //if i use the json directly it doesnt work, so have to write it to a file first
     fs.writeFileSync(jsonPath, JSON.stringify(output));
     //pretty sure only the -i and -e are needed?
-    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}"`;
+    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}" --cout`;
     console.log(replayCommand);
 
     var dolphinProcess = exec(replayCommand);
     dolphinProcess.stdout.on('data', (line) => {
         console.log(line);
         //we get [NO_GAME]            
-        spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+        //spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
     })
 }
-
-function playConversion(filePath, startFrame, endFrame) {
-    const settingsStmt = db.prepare('SELECT value from settings where key = ?');
-    const playbackPath = settingsStmt.get('playbackPath').value;
-    const isoPath = settingsStmt.get('isoPath').value;
-    var output = {
-        "mode": "queue",
-        "replay": "",
-        "isRealTimeMode": false,
-        "outputOverlayFiles": true,
-        "commandId": `${crypto.randomBytes(3 * 4).toString('hex')}`,
-        "queue": []
-    };
-    var queueMessage = {
-        "path": filePath,
-        "startFrame": startFrame,
-        "endFrame": endFrame
-    };
-    console.log(queueMessage);
-    output.queue.push(queueMessage);
-
-
-    let jsonPath = path.join(__dirname, "tempMoments.json");
-    //if i use the json directly it doesnt work, so have to write it to a file first
-    fs.writeFileSync(jsonPath, JSON.stringify(output));
-    //pretty sure only the -i and -e are needed?
-    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -e "${isoPath}" --cout`;
-    console.log(replayCommand);
-
-    var dolphinProcess = exec(replayCommand);
-    dolphinProcess.stdout.on('data', (line) => {
-        const commands = _.split(line, "\r\n");
-        _.each(commands, (command) => {
-            console.log(command);
-        })
-        //we get [NO_GAME]            
-        // spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
-    })
-}
-
-
 
 function getKeyByValue(object, value) {
     return Object.keys(object).find(key => object[key] === value);

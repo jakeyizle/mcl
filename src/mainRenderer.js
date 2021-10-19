@@ -6,6 +6,7 @@ const {Characters, Stages, CharacterStrings, StageStrings} = require('../static/
 var currentFileNumber = 1;
 const _ = require('lodash');
 const { create } = require('lodash');
+const db = require('better-sqlite3')('melee.db');
 
 document.addEventListener("DOMContentLoaded", async function() {
   addNavElements();
@@ -31,7 +32,6 @@ function refreshDropdowns() {
   let stageDropdown = document.getElementById('stage');
   stageDropdown.innerHTML = '';
   stageDropdown.appendChild(createDropdownOption('', 'Select a Stage'))
-
   for (let stage of StageStrings.sort()) {
     let option = createDropdownOption(Stages[stage], stage);
     stageDropdown.appendChild(option);
@@ -39,6 +39,7 @@ function refreshDropdowns() {
 
   let playlistDropdown = document.getElementById('playlistDropdown');
   playlistDropdown.innerHTML = ''
+  playlistDropdown.appendChild(createDropdownOption('', 'Select a Playlist'))
   let playlists = db.prepare('SELECT * from playlists').all();
   for (let playlist of playlists) {
     let option = createDropdownOption(playlist.name, playlist.name);

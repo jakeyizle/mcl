@@ -12,7 +12,6 @@ function loadPlaylist() {
 
 function createOrUpdatePlaylist() {
     let playlistName = document.getElementById('playlistName').value;
-    console.log(playlistName);
     let playlistDropdown = document.getElementById('playlistDropdown');
 
     try {
@@ -56,7 +55,7 @@ function loadPlaylistTable(playlistConversions) {
                 let button = document.createElement("button");
                 button.innerHTML = "Play Replay";
                 button.addEventListener('click', () => {
-                    playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame)
+                    playConversions([conversion])
                 });
                 cell.appendChild(button);
             } else {
@@ -73,4 +72,5 @@ function deletePlaylist() {
     let mapTableDelete = db.prepare('DELETE FROM playlistConversion where playlistName = ?').run(playlistName);
     let playlistTableDelete = db.prepare('DELETE FROM playlists where name = ?').run(playlistName);
     refreshDropdowns();
+    loadPlaylist();
 }

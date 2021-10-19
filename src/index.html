@@ -75,14 +75,6 @@
               <button id="searchButton" onclick="searchConversions()">Search Conversions</button>
             </div>
           </div>
-          <table class="table-striped" id="searchTable">
-            <thead>
-              <tr id="tableHeader">
-              </tr>
-            </thead>
-            <tbody id="tableBody">
-            </tbody>
-          </table>
           <div id="pageNumbers" style="display:none">
             <button id="firstPage" onclick="searchConversions(1)">First Page</button>
             <button id="previousPage" onclick="searchConversions(pageNumber - 1)">Previous Page</button>
@@ -91,31 +83,51 @@
             <button id="lastPage" onclick="searchConversions(maxPageCount)">Last Page</button>
 
           </div>
+          <table class="table-striped" id="searchTable">
+            <thead>
+              <tr id="tableHeader">
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+          </table>
+
         </div>
 
         <div id="settings" style="display:none">
           <div>
             Replay Path:
             <label id="replayPath"></label>
-            <button id="replayButton" onclick="document.getElementById('replaySelector').click()">Select Replay
+            <button id="replayButton" onclick="document.getElementById('replayPathSelector').click()">Select Replay
               Folder</button>
-            <input type="file" id="replaySelector" webkitdirectory hidden />
+            <input type="file" id="replayPathSelector" webkitdirectory hidden />
 
           </div>
           <div>
             Melee Iso Path:
             <label id="isoPath"></label>
-            <button id="isoButton" onclick="document.getElementById('isoSelector').click()">Select SSBM ISO
+            <button id="isoButton" onclick="document.getElementById('isoPathSelector').click()">Select SSBM ISO
               Path</button>
-            <input type="file" id="isoSelector" accept=".iso" hidden />
+            <input type="file" id="isoPathSelector" accept=".iso" hidden />
           </div>
           <div>
             Playback Dolphin Path:
             <label id="playbackPath"></label>
-            <button id="playbackButton" onclick="document.getElementById('playbackSelector').click()">Select Playback
+            <button id="playbackButton" onclick="document.getElementById('playbackPathSelector').click()">Select Playback
               Dolphin path</button>
-            <input type="file" id="playbackSelector" accept=".exe" hidden />
+            <input type="file" id="playbackPathSelector" accept=".exe" hidden />
           </div>
+          <div>
+            preRoll frames
+            <label id="preRoll"></label>            
+            <input type="number" id="preRollSelector">
+          </div>
+          <div>
+            postRoll frames
+            <label id="postRoll"></label>            
+            <input type="number" id="postRollSelector">
+          </div>
+
 
         </div>
         <div id="playlists" style="display:none">
