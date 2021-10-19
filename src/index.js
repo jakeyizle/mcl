@@ -185,6 +185,7 @@ function initDB() {
       ,percent
       ,time
       ,filepath
+      ,moveCount
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`);
   const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (

@@ -1,11 +1,13 @@
-var currentPlaylist;
+
+var playlistConversions; 
 
 function loadPlaylist() {
-    currentPlaylist = document.getElementById('playlistDropdown').value;
-    document.getElementById('playlistName').value = currentPlaylist;
-    let playlist = db.prepare('SELECT * FROM playlists WHERE name = ?').all(currentPlaylist)
-    let playlistConversions = db.prepare('select  * FROM conversions WHERE id IN (SELECT conversionid FROM playlistConversion WHERE playlistName = ?)').all(currentPlaylist);
+    let playlistName = document.getElementById('playlistDropdown').value;
+    document.getElementById('playlistName').value = playlistName
+    // let playlist = db.prepare('SELECT * FROM playlists WHERE name = ?').all(currentPlaylist)
+    playlistConversions = db.prepare('select  * FROM conversions WHERE id IN (SELECT conversionid FROM playlistConversion WHERE playlistName = ?)').all(playlistName);
     loadPlaylistTable(playlistConversions);
+    document.getElementById('playPlaylistReplays').style.display = playlistConversions.length > 0 ? 'block' : 'none';
 }
 
 function createOrUpdatePlaylist() {
@@ -18,7 +20,6 @@ function createOrUpdatePlaylist() {
         let option = createDropdownOption(playlistName, playlistName);
         playlistDropdown.appendChild(option);
         playlistDropdown.value = playlistName;
-        currentPlaylist = playlistName;
     } catch (e) {
         console.log(e);
     }
@@ -43,7 +44,6 @@ function loadPlaylistTable(playlistConversions) {
         header.appendChild(headerElement);
     }
 
-    let i = 0;
     for (let conversion of playlistConversions) {
         let row = document.createElement('tr');
         for (let field of fields) {
@@ -66,6 +66,11 @@ function loadPlaylistTable(playlistConversions) {
         }
         tableBody.appendChild(row);
     }
+}
 
-
+function deletePlaylist() {
+    let playlistName = document.getElementById('playlistDropdown').value;
+    let mapTableDelete = db.prepare('DELETE FROM playlistConversion where playlistName = ?').run(playlistName);
+    let playlistTableDelete = db.prepare('DELETE FROM playlists where name = ?').run(playlistName);
+    refreshDropdowns();
 }

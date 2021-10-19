@@ -4,20 +4,24 @@ const {
 const Photon = require("electron-photon");
 const {Characters, Stages, CharacterStrings, StageStrings} = require('../static/meleeIds.js');
 var currentFileNumber = 1;
+const _ = require('lodash');
+const { create } = require('lodash');
 
 document.addEventListener("DOMContentLoaded", async function() {
   addNavElements();
-  populateDropdowns();  
+  refreshDropdowns();  
 });
 
 const applicationIds = ['settings', 'main', 'playlists'];
 
 
 //dont want to clutter the html more than i am
-function populateDropdowns() {
+function refreshDropdowns() {
   let characterDropwndowns = ['attackingCharacter', 'defendingCharacter'];
   for (let characterDropdown of characterDropwndowns) {
     let dropdown = document.getElementById(characterDropdown);
+    dropdown.innerHTML = '';
+    dropdown.appendChild(createDropdownOption('', 'Select a Character'))
     for (let character of CharacterStrings.sort()) {    
       let option = createDropdownOption(Characters[character], character);      
       dropdown.appendChild(option);
@@ -25,12 +29,16 @@ function populateDropdowns() {
   }
 
   let stageDropdown = document.getElementById('stage');
+  stageDropdown.innerHTML = '';
+  stageDropdown.appendChild(createDropdownOption('', 'Select a Stage'))
+
   for (let stage of StageStrings.sort()) {
     let option = createDropdownOption(Stages[stage], stage);
     stageDropdown.appendChild(option);
   }
 
   let playlistDropdown = document.getElementById('playlistDropdown');
+  playlistDropdown.innerHTML = ''
   let playlists = db.prepare('SELECT * from playlists').all();
   for (let playlist of playlists) {
     let option = createDropdownOption(playlist.name, playlist.name);

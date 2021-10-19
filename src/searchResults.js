@@ -1,6 +1,10 @@
 const path = require('path');
 const fs = require('fs');
-const { exec, spawn } = require('child_process');
+const {
+    exec,
+    spawn
+} = require('child_process');
+const crypto = require('crypto');
 
 //this is probably indicative of bad design
 var conversions;
@@ -23,6 +27,10 @@ function searchConversions(newPageNumber = 1) {
     let stage = document.getElementById('stage').value;
     let didKill = document.getElementById('didKill').checked;
     let minimumDamage = document.getElementById('minimumDamage').value;
+    let maximumDamage = document.getElementById('maximumDamage').value;
+    let minimumMoveCount = document.getElementById('minimumMoveCount').value;
+    let maximumMoveCount = document.getElementById('maximumMoveCount').value;
+
     // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
 
     //dynamic search solution
@@ -58,7 +66,18 @@ function searchConversions(newPageNumber = 1) {
         baseQuery += ' AND percent >= @minimumDamage'
         queryObject.minimumDamage = parseInt(minimumDamage);
     };
-
+    if (maximumDamage) {
+        baseQuery += ' AND percent <= @maximumDamage';
+        queryObject.maximumDamage = parseInt(maximumDamage);
+    }
+    if (minimumMoveCount) {
+        baseQuery += ' AND moveCount >= @minimumMoveCount';
+        queryObject.minimumMoveCount = parseInt(minimumMoveCount);
+    }
+    if (maximumMoveCount) {
+        baseQuery += ' AND moveCount <= @maximumMoveCount';
+        queryObject.maximumMoveCount = parseInt(maximumMoveCount);
+    }
     //Paging with SQL for performance
     //seems to get slow when offset is large and there are where conditions
     baseQuery += ` ORDER BY ${sortField} ${sortDir} LIMIT ${itemsPerPage} OFFSET ${offset}`
@@ -124,7 +143,7 @@ function clearAndCreateRows() {
     let i = 0;
     for (let conversion of conversions) {
         let row = document.createElement('tr');
-        for (let field of fields) {            
+        for (let field of fields) {
             //table body logic
             let cell = document.createElement('td');
             if (field === 'attackingCharacter' || field === 'defendingCharacter' || field === 'stage') {
@@ -134,43 +153,79 @@ function clearAndCreateRows() {
                 let button = document.createElement("button");
                 button.innerHTML = "Play Replay";
                 button.addEventListener('click', () => {
-                    playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame)
+                    playConversion(conversion.filepath, conversion.startFrame, conversion.endFrame);
                 });
                 cell.appendChild(button);
             } else if (field === 'playList') {
                 let conversionPlaylistDropdown = document.createElement('select');
-                conversionPlaylistDropdown.setAttribute('id',`playlist-id-${i}`);
+                conversionPlaylistDropdown.setAttribute('id', `playlist-id-${i}`);
                 conversionPlaylistDropdown.setAttribute('multiple', 'multiple');
                 for (let playlist of playlists) {
                     let option = createDropdownOption(playlist, playlist);
                     let playlistConversion = db.prepare('SELECT * FROM playlistConversion WHERE playlistName = ? and conversionId = ?').all(playlist, conversion.id);
-                    if (playlistConversion.length > 0) {option.setAttribute('selected', true)}
+                    if (playlistConversion.length > 0) {
+                        option.setAttribute('selected', true)
+                    }
                     conversionPlaylistDropdown.appendChild(option);
                 }
-                cell.appendChild(conversionPlaylistDropdown);                            
-            }
-            else {
+                cell.appendChild(conversionPlaylistDropdown);
+            } else {
                 cell.innerHTML = conversion[field];
             }
-            row.appendChild(cell);            
+            row.appendChild(cell);
         }
         tableBody.appendChild(row);
         var select = new MSFmultiSelect(
-            document.querySelector(`#playlist-id-${i}`),
-            {
-              selectAll: true,
-              searchBox: true,
-              onChange:function(checked, value, instance) {
-                  let playlistConversionQuery = checked ? 'INSERT INTO playlistConversion (playlistName, conversionId) VALUES (?, ?)' 
-                    : 'DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?';
-                  let query = db.prepare(playlistConversionQuery).run(value, conversion.id);
-              },
-              placeholder:'Assign playlists'
+            document.querySelector(`#playlist-id-${i}`), {
+                selectAll: true,
+                searchBox: true,
+                onChange: function (checked, value, instance) {
+                    let playlistConversionQuery = checked ? 'INSERT INTO playlistConversion (playlistName, conversionId) VALUES (?, ?)' :
+                        'DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?';
+                    let query = db.prepare(playlistConversionQuery).run(value, conversion.id);
+                },
+                placeholder: 'Assign playlists'
             }
-          );
+        );
         i++;
 
     }
+}
+
+//TODO make one method
+function playConversions(conversions) {
+    const settingsStmt = db.prepare('SELECT value from settings where key = ?');
+    const playbackPath = settingsStmt.get('playbackPath').value;
+    const isoPath = settingsStmt.get('isoPath').value;
+    var output = {
+        "mode": "queue",
+        "replay": "",
+        "isRealTimeMode": false,
+        "outputOverlayFiles": true,
+        "queue": []
+    };
+    for (let conversion of conversions) {
+        var queueMessage = {
+            "path": conversion.filepath,
+            "startFrame": conversion.startFrame,
+            "endFrame": conversion.endFrame
+        };
+        output.queue.push(queueMessage);
+    }
+
+    let jsonPath = path.join(__dirname, "tempMoments.json");
+    //if i use the json directly it doesnt work, so have to write it to a file first
+    fs.writeFileSync(jsonPath, JSON.stringify(output));
+    //pretty sure only the -i and -e are needed?
+    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}"`;
+    console.log(replayCommand);
+
+    var dolphinProcess = exec(replayCommand);
+    dolphinProcess.stdout.on('data', (line) => {
+        console.log(line);
+        //we get [NO_GAME]            
+        spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+    })
 }
 
 function playConversion(filePath, startFrame, endFrame) {
@@ -182,6 +237,7 @@ function playConversion(filePath, startFrame, endFrame) {
         "replay": "",
         "isRealTimeMode": false,
         "outputOverlayFiles": true,
+        "commandId": `${crypto.randomBytes(3 * 4).toString('hex')}`,
         "queue": []
     };
     var queueMessage = {
@@ -189,20 +245,29 @@ function playConversion(filePath, startFrame, endFrame) {
         "startFrame": startFrame,
         "endFrame": endFrame
     };
+    console.log(queueMessage);
     output.queue.push(queueMessage);
+
+
     let jsonPath = path.join(__dirname, "tempMoments.json");
     //if i use the json directly it doesnt work, so have to write it to a file first
     fs.writeFileSync(jsonPath, JSON.stringify(output));
     //pretty sure only the -i and -e are needed?
-    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}"`;
+    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -e "${isoPath}" --cout`;
     console.log(replayCommand);
 
     var dolphinProcess = exec(replayCommand);
     dolphinProcess.stdout.on('data', (line) => {
+        const commands = _.split(line, "\r\n");
+        _.each(commands, (command) => {
+            console.log(command);
+        })
         //we get [NO_GAME]            
-        spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+        // spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
     })
 }
+
+
 
 function getKeyByValue(object, value) {
     return Object.keys(object).find(key => object[key] === value);

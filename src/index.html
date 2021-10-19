@@ -62,6 +62,14 @@
             <div>
               Minimum damage done:
               <input id="minimumDamage" type="number" value="" placeholder="Minimum %">
+              Max damage done:
+              <input id="maximumDamage" type="number" value="" placeholder="Max %">
+            </div>
+            <div>
+              Minimum move count:
+              <input id="minimumMoveCount" type="number" value="" placeholder="Minimum moves in combo">
+              Max move count:
+              <input id="maximumMoveCount" type="number" value="" placeholder="Max moves in combo">
             </div>
             <div>
               <button id="searchButton" onclick="searchConversions()">Search Conversions</button>
@@ -118,6 +126,10 @@
           Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
             <option value="">Select or Create a playlist</option>
           </select>
+        <div>
+          <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
+          <button id="deletePlaylistButton" onclick="deletePlaylist()">Delete Playlist</button>
+        </div>
           <table class="table-striped" id="playlistTable">              
             <thead>
               <tr id="playlistTableHeader">
@@ -126,6 +138,7 @@
             <tbody id="playlistTableBody">
             </tbody>
           </table>
+          <button id="playPlaylistReplays" onclick="playConversions(playlistConversions)" style="display:none">Play all Replays</button>
         </div>
       </div>
 
