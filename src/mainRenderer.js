@@ -2,15 +2,22 @@ const {
   ipcRenderer
 } = require('electron');
 const Photon = require("electron-photon");
-const {Characters, Stages, CharacterStrings, StageStrings} = require('../static/meleeIds.js');
+const {
+  Characters,
+  Stages,
+  CharacterStrings,
+  StageStrings
+} = require('../static/meleeIds.js');
 var currentFileNumber = 1;
-const _ = require('lodash');
-const { create } = require('lodash');
+const {
+  create,
+  _
+} = require('lodash');
 const db = require('better-sqlite3')('melee.db');
 
-document.addEventListener("DOMContentLoaded", async function() {
+document.addEventListener("DOMContentLoaded", async function () {
   addNavElements();
-  refreshDropdowns();  
+  refreshDropdowns();
 });
 
 const applicationIds = ['settings', 'main', 'playlists'];
@@ -23,10 +30,10 @@ function refreshDropdowns() {
     let dropdown = document.getElementById(characterDropdown);
     dropdown.innerHTML = '';
     dropdown.appendChild(createDropdownOption('', 'Select a Character'))
-    for (let character of CharacterStrings.sort()) {    
-      let option = createDropdownOption(Characters[character], character);      
+    for (let character of CharacterStrings.sort()) {
+      let option = createDropdownOption(Characters[character], character);
       dropdown.appendChild(option);
-    }    
+    }
   }
 
   let stageDropdown = document.getElementById('stage');
@@ -52,7 +59,7 @@ function addNavElements() {
   var parentElement = document.getElementById('navbar');
   for (let navItem of applicationIds) {
     let navItemElement = document.createElement('nav-item');
-    navItemElement.setAttribute("id", navItem+'nav');
+    navItemElement.setAttribute("id", navItem + 'nav');
     navItemElement.innerHTML = navItem;
 
     navItemElement.addEventListener('click', () => {
@@ -63,7 +70,7 @@ function addNavElements() {
       navItemElement.click();
     }
   }
-  
+
 }
 
 function showAppAndHideOthers(elementId) {

@@ -4,7 +4,8 @@ const {
     exec,
     spawn
 } = require('child_process');
-const crypto = require('crypto');
+// const crypto = require('crypto');
+const OBSWebsocket = require('obs-websocket-js');
 
 //this is probably indicative of bad design
 var conversions;
@@ -206,18 +207,18 @@ function playConversions(conversions) {
         "outputOverlayFiles": true,
         "queue": []
     };
-        for (let conversion of conversions) {
-            let startFrame = conversion.startFrame - preRoll;
-            let endFrame = conversion.endFrame + parseInt(postRoll);
-            console.log(startFrame, endFrame);
-            var queueMessage = {
-                "path": conversion.filepath,
-                "startFrame": startFrame,
-                "endFrame": endFrame
-            };
-            output.queue.push(queueMessage);
-        }
-    
+    for (let conversion of conversions) {
+        let startFrame = conversion.startFrame - preRoll;
+        let endFrame = conversion.endFrame + parseInt(postRoll);
+        console.log(startFrame, endFrame);
+        var queueMessage = {
+            "path": conversion.filepath,
+            "startFrame": startFrame,
+            "endFrame": endFrame
+        };
+        output.queue.push(queueMessage);
+    }
+
 
     let jsonPath = path.join(__dirname, "tempMoments.json");
     //if i use the json directly it doesnt work, so have to write it to a file first
@@ -226,11 +227,49 @@ function playConversions(conversions) {
     var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}" --cout`;
     console.log(replayCommand);
 
-    var dolphinProcess = exec(replayCommand);
-    dolphinProcess.stdout.on('data', (line) => {
-        console.log(line);
-        //we get [NO_GAME]            
-        //spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+    var dolphinProcess = exec(replayCommand)
+    const obs = new OBSWebsocket();
+    obs.connect({address: 'localhost:4444', password:'password'});
+    let startFrame;
+    let endFrame;
+    let currentFrame;
+    let recordingStarted;
+    dolphinProcess.stdout.on('data', (line) => {        
+        
+        const commands = _.split(line, "\r\n");
+        _.each(commands, (command) => {
+            command = _.split(command, " ");
+            // console.log(command);
+            if (command[0] === '[PLAYBACK_START_FRAME]') {
+                startFrame = parseInt(command[1]);
+            }
+            if (command[0] === '[PLAYBACK_END_FRAME]') {                
+                endFrame = parseInt(command[1]);
+            }
+            if (command[0] === '[CURRENT_FRAME]') {
+                currentFrame = parseInt(command[1]);            
+                if (currentFrame == startFrame) {
+                    console.log('start record');
+                    if (!recordingStarted) {
+                        obs.send("StartRecording").catch((err) => console.log(err));
+                        recordingStarted = true;
+                    } else { 
+                        obs.send("ResumeRecording").catch((err) => console.log(err));
+                    }                    
+                }
+                if (currentFrame == endFrame) {
+                    console.log('pauseRecord');
+                    obs.send("PauseRecording").catch((err) => console.log(err));
+                }
+            }
+            if (command[0] === '[NO_GAME]') {
+                console.log('stopRecord');
+                obs.send("StopRecording").catch((err) => console.log(err));
+                spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+                recordingStarted = false;
+            }
+
+        });
     })
 }
 

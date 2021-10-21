@@ -54,6 +54,7 @@
     "exec": "^0.2.1",
     "lodash": "^4.17.21",
     "msfmultiselect": "^2.4.0",
+    "obs-websocket-js": "^4.0.3",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

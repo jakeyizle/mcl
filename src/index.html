@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html>
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Hello World!</title>
+  <link rel="stylesheet" href="index.css">
+
+  <script src="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.css" rel="stylesheet">
+</head>
+
 <ph-window>
-
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="index.css">
-
-    <script src="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.css" rel="stylesheet">
-  </head>
-
-
   <window-content>
     <div class="pane-group">
       <div class="pane-sm sidebar">
@@ -91,7 +90,6 @@
             <tbody id="tableBody">
             </tbody>
           </table>
-
         </div>
 
         <div id="settings" style="display:none">
@@ -113,18 +111,19 @@
           <div>
             Playback Dolphin Path:
             <label id="playbackPath"></label>
-            <button id="playbackButton" onclick="document.getElementById('playbackPathSelector').click()">Select Playback
+            <button id="playbackButton" onclick="document.getElementById('playbackPathSelector').click()">Select
+              Playback
               Dolphin path</button>
             <input type="file" id="playbackPathSelector" accept=".exe" hidden />
           </div>
           <div>
             preRoll frames
-            <label id="preRoll"></label>            
+            <label id="preRoll"></label>
             <input type="number" id="preRollSelector">
           </div>
           <div>
             postRoll frames
-            <label id="postRoll"></label>            
+            <label id="postRoll"></label>
             <input type="number" id="postRollSelector">
           </div>
 
@@ -138,11 +137,11 @@
           Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
             <option value="">Select or Create a playlist</option>
           </select>
-        <div>
-          <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
-          <button id="deletePlaylistButton" onclick="deletePlaylist()">Delete Playlist</button>
-        </div>
-          <table class="table-striped" id="playlistTable">              
+          <div>
+            <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
+            <button id="deletePlaylistButton" onclick="deletePlaylist()">Delete Playlist</button>
+          </div>
+          <table class="table-striped" id="playlistTable">
             <thead>
               <tr id="playlistTableHeader">
               </tr>
@@ -150,7 +149,8 @@
             <tbody id="playlistTableBody">
             </tbody>
           </table>
-          <button id="playPlaylistReplays" onclick="playConversions(playlistConversions)" style="display:none">Play all Replays</button>
+          <button id="playPlaylistReplays" onclick="playConversions(playlistConversions)" style="display:none">Play all
+            Replays</button>
         </div>
       </div>
 

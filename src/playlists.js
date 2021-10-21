@@ -1,5 +1,4 @@
-
-var playlistConversions; 
+var playlistConversions;
 
 function loadPlaylist() {
     let playlistName = document.getElementById('playlistDropdown').value;
