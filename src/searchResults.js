@@ -194,7 +194,7 @@ function clearAndCreateRows() {
 }
 
 //TODO make one method
-function playConversions(conversions) {
+function playConversions(conversions, recordGame) {
     const settingsStmt = db.prepare('SELECT value from settings where key = ?');
     const playbackPath = settingsStmt.get('playbackPath').value;
     const isoPath = settingsStmt.get('isoPath').value;
@@ -218,26 +218,36 @@ function playConversions(conversions) {
         };
         output.queue.push(queueMessage);
     }
-
-
     let jsonPath = path.join(__dirname, "tempMoments.json");
     //if i use the json directly it doesnt work, so have to write it to a file first
     fs.writeFileSync(jsonPath, JSON.stringify(output));
     //pretty sure only the -i and -e are needed?
     var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}" --cout`;
     console.log(replayCommand);
-
     var dolphinProcess = exec(replayCommand)
+    if (recordGame) {
+        recordReplay(dolphinProcess);
+    }
+    
+    
+}
+
+function getKeyByValue(object, value) {
+    return Object.keys(object).find(key => object[key] === value);
+}
+
+function recordReplay(dolphinProcess) {
     const obs = new OBSWebsocket();
     obs.connect({address: 'localhost:4444', password:'password'});
     let startFrame;
     let endFrame;
     let currentFrame;
     let recordingStarted;
+    let fileName;
+
     dolphinProcess.stdout.on('data', (line) => {        
-        
         const commands = _.split(line, "\r\n");
-        _.each(commands, (command) => {
+        _.each(commands, async(command) => {
             command = _.split(command, " ");
             // console.log(command);
             if (command[0] === '[PLAYBACK_START_FRAME]') {
@@ -249,11 +259,12 @@ function playConversions(conversions) {
             if (command[0] === '[CURRENT_FRAME]') {
                 currentFrame = parseInt(command[1]);            
                 if (currentFrame == startFrame) {
-                    console.log('start record');
                     if (!recordingStarted) {
-                        obs.send("StartRecording").catch((err) => console.log(err));
+                        console.log('start record');
+                        await obs.send("StartRecording");
                         recordingStarted = true;
                     } else { 
+                        console.log('resume record');
                         obs.send("ResumeRecording").catch((err) => console.log(err));
                     }                    
                 }
@@ -264,15 +275,14 @@ function playConversions(conversions) {
             }
             if (command[0] === '[NO_GAME]') {
                 console.log('stopRecord');
-                obs.send("StopRecording").catch((err) => console.log(err));
+                let recordingStatus = await obs.send("GetRecordingStatus");
+                fileName = recordingStatus.recordingFilename;
+                console.log(fileName);
+                await obs.send("StopRecording");
                 spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
                 recordingStarted = false;
             }
 
         });
     })
-}
-
-function getKeyByValue(object, value) {
-    return Object.keys(object).find(key => object[key] === value);
 }
