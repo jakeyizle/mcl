@@ -1,7 +1,7 @@
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 const settingsInsert = db.prepare('INSERT INTO settings (key, value) values (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value');
 
-const settings = ['replayPath', 'isoPath', 'playbackPath', 'preRoll', 'postRoll'];
+const settings = ['replayPath', 'isoPath', 'playbackPath', 'preRoll', 'postRoll', 'obsPassword', 'obsPort'];
 
 //TODO create better framework for settings/config
 document.addEventListener("DOMContentLoaded", async function () {

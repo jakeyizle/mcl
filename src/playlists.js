@@ -7,6 +7,7 @@ function loadPlaylist() {
     playlistConversions = db.prepare('select  * FROM conversions WHERE id IN (SELECT conversionid FROM playlistConversion WHERE playlistName = ?)').all(playlistName);
     loadPlaylistTable(playlistConversions);
     document.getElementById('playPlaylistReplays').style.display = playlistConversions.length > 0 ? 'block' : 'none';
+    document.getElementById('recordPlaylistReplays').style.display = playlistConversions.length > 0 ? 'block' : 'none';
 }
 
 function createOrUpdatePlaylist() {

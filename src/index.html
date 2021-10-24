@@ -126,6 +126,16 @@
             <label id="postRoll"></label>
             <input type="number" id="postRollSelector">
           </div>
+          <div>
+            OBS websocket password
+            <label id="obsPassword"></label>
+            <input type="text" id="obsPasswordSelector">
+          </div>
+          <div>
+            OBS Port
+            <label id="obsPort"></label>
+            <input type="number" id="obsPortSelector">
+          </div>
 
 
         </div>
@@ -151,6 +161,8 @@
           </table>
           <button id="playPlaylistReplays" onclick="playConversions(playlistConversions)" style="display:none">Play all
             Replays</button>
+            <button id="recordPlaylistReplays" onclick="playConversions(playlistConversions, true)" style="display:none">Record all
+              Replays</button>
         </div>
       </div>
 

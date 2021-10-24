@@ -236,9 +236,12 @@ function getKeyByValue(object, value) {
     return Object.keys(object).find(key => object[key] === value);
 }
 
-function recordReplay(dolphinProcess) {
+async function recordReplay(dolphinProcess) {
+    const settingsStmt = db.prepare('SELECT value from settings where key = ?');
+    const obsPassword = settingsStmt.get('obsPassword').value;
+    const obsPort = settingsStmt.get('obsPort').value;
     const obs = new OBSWebsocket();
-    obs.connect({address: 'localhost:4444', password:'password'});
+    obs.connect({address: `localhost:${obsPort}`, password:obsPassword});
     let startFrame;
     let endFrame;
     let currentFrame;
@@ -282,7 +285,6 @@ function recordReplay(dolphinProcess) {
                 spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
                 recordingStarted = false;
             }
-
         });
     })
 }
