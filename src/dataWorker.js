@@ -25,8 +25,8 @@ if (isMainThread) {
         let end = start + range;
 
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
-        const insertConversion = db.prepare("INSERT INTO conversions (moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
-        const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (conversionId,moveId,frame,hitCount,damage) VALUES (@conversionId,@moveId,@frame,@hitCount,@damage)");
+        const insertConversion = db.prepare("INSERT INTO conversions (startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
+        const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
 
         for (let i = start; i < end; i++) {
             try {
@@ -54,9 +54,11 @@ if (isMainThread) {
                     conversions[j].didKill = conversions[j].didKill ? 1 : 0;
                     conversions[j].id = uuidv4();
                     conversions[j].moveCount = conversions[j].moves.length;
-                    conversions[j].moves.forEach(move => {
-                        move.conversionId = conversions[j].id;
-                    })
+                    for (let k = 0; k < conversions[j].moves.length; k++) {
+                        conversions[j].moves[k].conversionId = conversions[j].id;
+                        conversions[j].moves[k].moveIndex = k;
+                    }                    
+                    conversions[j].startAt = metadata.startAt;
                     //copy by value
                     moves = moves.concat(conversions[j].moves);
                 }

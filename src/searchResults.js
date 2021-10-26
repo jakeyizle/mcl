@@ -12,7 +12,7 @@ var conversions;
 var pageNumber;
 var itemsPerPage = 20;
 var maxPageCount;
-var sortField = 'id';
+var sortField = 'startAt';
 var sortDir = 'ASC';
 var previousCountQuery;
 
@@ -32,6 +32,12 @@ function searchConversions(newPageNumber = 1) {
     let minimumMoveCount = document.getElementById('minimumMoveCount').value;
     let maximumMoveCount = document.getElementById('maximumMoveCount').value;
 
+    let moveContainer = document.getElementById('moveContainer').children
+    let moveIds = [];
+    for (let i = 0; i < moveContainer.length; i++) {
+        moveIds.push(moveContainer[i].id);
+    }    
+    console.log(moveIds);
     // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
 
     //dynamic search solution
@@ -79,9 +85,20 @@ function searchConversions(newPageNumber = 1) {
         baseQuery += ' AND moveCount <= @maximumMoveCount';
         queryObject.maximumMoveCount = parseInt(maximumMoveCount);
     }
+    if (moveIds.length > 0) {
+        for (let i = 0; i < moveIds.length; i++) 
+        {
+            let objName = `move${i}`;
+            baseQuery += ` AND id in (SELECT conversionId FROM moves WHERE moveId = @${objName} AND moveIndex = ${i+1})`;                        
+            queryObject[objName] = parseInt(moveIds[i]);            
+        }
+        
+    }
     //Paging with SQL for performance
     //seems to get slow when offset is large and there are where conditions
     baseQuery += ` ORDER BY ${sortField} ${sortDir} LIMIT ${itemsPerPage} OFFSET ${offset}`
+    console.log(baseQuery);
+    console.log(queryObject);
     let query = db.prepare(baseQuery);
     conversions = queryObject ? query.all(queryObject) : query.all();
 
@@ -126,7 +143,7 @@ function clearAndCreateRows() {
     let tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '';
     //columns - match to conversion properties or custom logic
-    let fields = ['playList', 'playReplay', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
+    let fields = ['playList', 'playReplay', 'startAt', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
     let header = document.getElementById('tableHeader');
     header.innerHTML = '';
     for (let field of fields) {
@@ -227,6 +244,12 @@ function playConversions(conversions, recordGame) {
     var dolphinProcess = exec(replayCommand)
     if (recordGame) {
         recordReplay(dolphinProcess);
+    } else {
+        dolphinProcess.stdout.on('data', (line) => { 
+            if (line.includes('[NO_GAME]')) {
+                spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+            }
+        })
     }
     
     

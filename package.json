@@ -55,7 +55,11 @@
     "lodash": "^4.17.21",
     "msfmultiselect": "^2.4.0",
     "obs-websocket-js": "^4.0.3",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "vue": "^2.6.14",
+    "vue-router": "^3.5.2",
+    "vue3-sfc-loader": "^0.8.4",
+    "vuex": "^3.6.2"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.54",

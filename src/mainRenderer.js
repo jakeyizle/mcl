@@ -6,7 +6,8 @@ const {
   Characters,
   Stages,
   CharacterStrings,
-  StageStrings
+  StageStrings,
+  moves
 } = require('../static/meleeIds.js');
 var currentFileNumber = 1;
 const {
@@ -52,6 +53,28 @@ function refreshDropdowns() {
     let option = createDropdownOption(playlist.name, playlist.name);
     playlistDropdown.appendChild(option);
   }
+
+  let moveDropdown = document.getElementById('moves');
+  moveDropdown.innerHTML = ''
+  moveDropdown.appendChild(createDropdownOption('', 'Select moves'));
+  for (let move of moves) {
+    let option = createDropdownOption(move.id, move.name);
+    moveDropdown.appendChild(option);
+  }
+  let moveContainer = document.getElementById('moveContainer');
+  moveDropdown.addEventListener('change', () => {
+    console.log(moveDropdown.value);
+    let newMove = document.createElement('button');
+    newMove.setAttribute('class', 'btn btn-default');
+    newMove.setAttribute('id', `${moveDropdown.value}`);    
+    newMove.innerHTML = moves.find(x=>x.id == moveDropdown.value).name;
+    moveContainer.appendChild(newMove);
+
+    newMove.addEventListener('click', () => {
+      newMove.remove();
+    })
+    moveDropdown.value = ''
+  })
 }
 
 //doing this instead of hardcoding the nav elements

@@ -186,6 +186,7 @@ function initDB() {
       ,time
       ,filepath
       ,moveCount
+      ,startAt
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`);
   const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (
@@ -194,7 +195,8 @@ function initDB() {
       moveId,
       frame,
       hitCount,
-      damage
+      damage,
+      moveIndex
       ,FOREIGN KEY (conversionId) REFERENCES conversions(id)
   )`);
   const settingsStmt = db.prepare(`CREATE TABLE IF NOT EXISTS settings (
