@@ -37,85 +37,73 @@ function searchConversions(newPageNumber = 1) {
     for (let i = 0; i < moveContainer.length; i++) {
         moveIds.push(moveContainer[i].id);
     }    
-    console.log(moveIds);
     // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
 
     //dynamic search solution
     let queryObject = {};
-
-    let baseQuery = 'SELECT * FROM conversions WHERE 1=1';
+    let whereString = 'WHERE 1=1';    
     if (attackingPlayerCode) {
-        baseQuery += ' AND attackingPlayer = @attackingPlayerCode'
+        whereString += ' AND attackingPlayer = @attackingPlayerCode'
         queryObject.attackingPlayerCode = attackingPlayerCode;
     };
     if (attackingCharacter) {
-        baseQuery += ' AND attackingCharacter = @attackingCharacter'
+        whereString += ' AND attackingCharacter = @attackingCharacter'
         //parseint needed for sqlite comparison
         queryObject.attackingCharacter = parseInt(attackingCharacter);
     };
     if (defendingPlayerCode) {
-        baseQuery += ' AND defendingPlayer = @defendingPlayerCode'
+        whereString += ' AND defendingPlayer = @defendingPlayerCode'
         queryObject.defendingPlayerCode = defendingPlayerCode;
     };
     if (defendingCharacter) {
-        baseQuery += ' AND defendingCharacter = @defendingCharacter'
+        whereString += ' AND defendingCharacter = @defendingCharacter'
         queryObject.defendingCharacter = parseInt(defendingCharacter);
     };
     if (stage) {
-        baseQuery += ' AND stage = @stage'
+        whereString += ' AND stage = @stage'
         queryObject.stage = parseInt(stage);
     };
     if (didKill) {
-        baseQuery += ' AND didKill = 1'
+        whereString += ' AND didKill = 1'
         //special case cause sqlite doesnt store true/false?
     };
     if (minimumDamage) {
-        baseQuery += ' AND percent >= @minimumDamage'
+        whereString += ' AND percent >= @minimumDamage'
         queryObject.minimumDamage = parseInt(minimumDamage);
     };
     if (maximumDamage) {
-        baseQuery += ' AND percent <= @maximumDamage';
+        whereString += ' AND percent <= @maximumDamage';
         queryObject.maximumDamage = parseInt(maximumDamage);
     }
     if (minimumMoveCount) {
-        baseQuery += ' AND moveCount >= @minimumMoveCount';
+        whereString += ' AND moveCount >= @minimumMoveCount';
         queryObject.minimumMoveCount = parseInt(minimumMoveCount);
     }
     if (maximumMoveCount) {
-        baseQuery += ' AND moveCount <= @maximumMoveCount';
+        whereString += ' AND moveCount <= @maximumMoveCount';
         queryObject.maximumMoveCount = parseInt(maximumMoveCount);
     }
     if (moveIds.length > 0) {
         for (let i = 0; i < moveIds.length; i++) 
         {
             let objName = `move${i}`;
-            baseQuery += ` AND id in (SELECT conversionId FROM moves WHERE moveId = @${objName} AND moveIndex = ${i+1})`;                        
+            whereString += ` AND id in (SELECT conversionId FROM moves WHERE moveId = @${objName} AND moveIndex = ${i+1})`;                        
             queryObject[objName] = parseInt(moveIds[i]);            
         }
         
     }
+    let query = `with cte as(select count(*) total from conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
+
     //Paging with SQL for performance
     //seems to get slow when offset is large and there are where conditions
-    baseQuery += ` ORDER BY ${sortField} ${sortDir} LIMIT ${itemsPerPage} OFFSET ${offset}`
-    console.log(baseQuery);
-    console.log(queryObject);
-    let query = db.prepare(baseQuery);
-    conversions = queryObject ? query.all(queryObject) : query.all();
+    query += ` ORDER BY ${sortField} ${sortDir} LIMIT ${itemsPerPage} OFFSET ${offset}`
+    console.log(query);
+    let prepQuery = db.prepare(query);
+    conversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();    
 
-
-    document.getElementById('pageNumbers').style.display = 'block';
-
-    //page number logic
-    //probably should just create 2 separate queries and add the WHERE clauses instead of this
-    let regex = /ORDER.*/;
-    let tempQuery = baseQuery.replace(regex, '');
-    let countQuery = tempQuery.replace('SELECT *', 'SELECT COUNT(id)');
-    //this is slow to run every time therefore caching solution
-    if (!(previousCountQuery === countQuery)) {
-        let count = queryObject ? db.prepare(countQuery).pluck().get(queryObject) : db.prepare(countQuery).pluck().get();
-        maxPageCount = Math.ceil(count / itemsPerPage);
-    }
+    maxPageCount = conversions.length > 0 ? Math.ceil(conversions[0].total / itemsPerPage) : 1;
     document.getElementById('pageNumber').innerHTML = `${pageNumber} of ${maxPageCount}`;
+    document.getElementById('pageNumbers').style.display = 'block';
     if (pageNumber == 1) {
         document.getElementById('previousPage').disabled = 'true';
     } else {
@@ -127,10 +115,10 @@ function searchConversions(newPageNumber = 1) {
         document.getElementById('nextPage').removeAttribute('disabled');
     }
     clearAndCreateRows();
-    previousCountQuery = countQuery;
 }
 
 function setConversionSort(newSortField) {
+    if (newSortField === 'playList') { return; }
     if (sortField === newSortField) {
         sortDir = sortDir === 'ASC' ? 'DESC' : 'ASC';
     }
