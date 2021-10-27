@@ -1,3 +1,4 @@
+
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 const settingsInsert = db.prepare('INSERT INTO settings (key, value) values (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value');
 
@@ -34,6 +35,10 @@ for (let setting of settings) {
                 key: setting,
                 value: value
             });
+            if (setting === 'replayPath') {
+                console.log('loadReplays');
+                ipcRenderer.invoke('loadReplays');
+            }
         })
     } else {
         document.getElementById(`${setting}Selector`).addEventListener('input', async () => {
@@ -44,6 +49,7 @@ for (let setting of settings) {
         })
     }
 }
+
 
 // for (let elementId of elementIds) {
 //     document.querySelector('#'+elementId+'Selector').addEventListener('change', async () => {     

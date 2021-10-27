@@ -20,6 +20,11 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
 var threads = new Set();
 var mainWindow;
 
+app.on('before-quit', () => {
+  for (let worker of threads) {
+    worker.postMessage('exit');    
+  }
+})
 
 const createWindow = () => {
   // Create the browser window.
@@ -33,8 +38,8 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  mainWindow.once('ready-to-show', () => {
-    createDataWorkers();
+  mainWindow.once('did-finish-load', () => {
+    console.log('finishedwindowload');
   })
   // Open the DevTools.
 };
@@ -45,11 +50,8 @@ const createWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   initDB();
-  //rename db -> settings/config
-  isConfigValid().then((isConfigValid) => {
-    console.log(`is config valid? - ${isConfigValid}`);
-    createWindow();
-  });
+  createDataWorkers();
+  createWindow();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -74,10 +76,8 @@ app.on('activate', () => {
 
 
 
-ipcMain.handle('changeWindow', async (event, message) => {
-  console.log(message);
-  mainWindow.loadFile(path.join(__dirname, `${message.window}.html`));
-  //figure out a better way
+ipcMain.handle('loadReplays', async (event, message) => {
+  console.log('loadReplays!!');
   createDataWorkers();
 })
 
@@ -87,33 +87,9 @@ ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 })
 
-async function isConfigValid() {
-  try {
-    const settingsStmt = db.prepare('SELECT * FROM settings');
-    const settingsInfo = settingsStmt.all();
-    if (settingsInfo.length < 3) return false; 
-    for (let setting of settingsInfo) {    
-      console.log(setting);
-      switch(setting) {
-        case 'replayPath':
-          let files = await getFiles(setting);
-          let regExp = /.*\.slp$/;
-          let fileCount = files.filter(file => regExp.test(file.name)).length;
-          if (fileCount <= 0) return false;          
-          break;
-        default:
-          break;
-      }
-    }
-    return true;
-  } catch (e) {
-    console.log(e);
-    console.log('error :(');
-    return false;
-  }
-}
-
 async function createDataWorkers() {
+  if (threads.length > 1) {return;}
+
   const threadCount = os.cpus().length - 1;
   console.log(`threadcount: ${threadCount}`);
 

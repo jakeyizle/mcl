@@ -11,6 +11,7 @@ const {
     v4: uuidv4
 } = require('uuid');
 var currentFile;
+var terminateFlag = false;
 
 //should never be in mainthread
 if (isMainThread) {
@@ -31,6 +32,7 @@ if (isMainThread) {
         for (let i = start; i < end; i++) {
             try {
                 const game = new SlippiGame(files[i].path);
+                currentFile = files[i].path;
                 const settings = game.getSettings();
                 const metadata = game.getMetadata();
 
@@ -75,7 +77,9 @@ if (isMainThread) {
                 });
                 insertManyMoves(moves);
 
+                if (terminateFlag) {console.log('TERMINATE!'); process.exit();}
                 parentPort.postMessage(`${i} of ${end} - start = ${start}`);
+
             } catch (e) {
                 // console.log(e);
                 // console.log('error :(')
@@ -94,3 +98,8 @@ if (isMainThread) {
 
 
 }
+parentPort.on('exit' ,() => {
+    console.log('EXIT!');
+    terminateFlag = true;
+}
+)
