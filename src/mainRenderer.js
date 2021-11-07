@@ -1,27 +1,19 @@
 const {
   ipcRenderer
 } = require('electron');
-const Photon = require("electron-photon");
-const {
-  Characters,
-  Stages,
-  CharacterStrings,
-  StageStrings,
-  moves
-} = require('../static/meleeIds.js');
+
 var currentFileNumber = 1;
 const {
   create,
   _
 } = require('lodash');
 const db = require('better-sqlite3')('melee.db');
-
 document.addEventListener("DOMContentLoaded", async function () {
   addNavElements();
   refreshDropdowns();
 });
 
-const applicationIds = ['settings', 'main', 'playlists'];
+const applicationIds = ['settings', 'main', 'playlists', 'react'];
 
 
 //dont want to clutter the html more than i am
@@ -89,9 +81,9 @@ function addNavElements() {
       showAppAndHideOthers(navItem);
     });
     parentElement.appendChild(navItemElement);
-    if (navItem === 'main') {
-      navItemElement.click();
-    }
+    // if (navItem === 'main') {
+    //   navItemElement.click();
+    // }
   }
 
 }

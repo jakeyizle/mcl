@@ -11,6 +11,8 @@
 
   <script src="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.js"></script>
   <link href="https://cdn.jsdelivr.net/gh/minisuperfiles/MSFmultiSelect/msfmultiselect.min.css" rel="stylesheet">
+  <!-- <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" /> -->
+  <!-- <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" /> -->
 </head>
 
 <ph-window>
@@ -21,11 +23,6 @@
         </nav-group>
       </div>
       <div class="pane">
-        <!-- <div id="my-app">
-          <my-component></my-component>
-        </div> -->
-
-
         <div id="main" style="display:none">
           <div id="progress" class="progress">
             <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
@@ -101,91 +98,102 @@
           </div>
         </div>
 
-          <div id="settings" style="display:none">
-            <div>
-              Replay Path:
-              <label id="replayPath"></label>
-              <button id="replayButton" onclick="document.getElementById('replayPathSelector').click()">Select Replay
-                Folder</button>
-              <input type="file" id="replayPathSelector" webkitdirectory hidden />
-
-            </div>
-            <div>
-              Melee Iso Path:
-              <label id="isoPath"></label>
-              <button id="isoButton" onclick="document.getElementById('isoPathSelector').click()">Select SSBM ISO
-                Path</button>
-              <input type="file" id="isoPathSelector" accept=".iso" hidden />
-            </div>
-            <div>
-              Playback Dolphin Path:
-              <label id="playbackPath"></label>
-              <button id="playbackButton" onclick="document.getElementById('playbackPathSelector').click()">Select
-                Playback
-                Dolphin path</button>
-              <input type="file" id="playbackPathSelector" accept=".exe" hidden />
-            </div>
-            <div>
-              preRoll frames
-              <label id="preRoll"></label>
-              <input type="number" id="preRollSelector">
-            </div>
-            <div>
-              postRoll frames
-              <label id="postRoll"></label>
-              <input type="number" id="postRollSelector">
-            </div>
-            <div>
-              OBS websocket password
-              <label id="obsPassword"></label>
-              <input type="text" id="obsPasswordSelector">
-            </div>
-            <div>
-              OBS Port
-              <label id="obsPort"></label>
-              <input type="number" id="obsPortSelector">
-            </div>
-
+        <div id="settings" style="display:none">
+          <div>
+            Replay Path:
+            <label id="replayPath"></label>
+            <button id="replayButton" onclick="document.getElementById('replayPathSelector').click()">Select Replay
+              Folder</button>
+            <input type="file" id="replayPathSelector" webkitdirectory hidden />
 
           </div>
-          <div id="playlists" style="display:none">
-            <div>
-              Playlist Name:
-              <input type="text" id="playlistName" value="" placeholder="Enter new playlist name">
-            </div>
-            Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
-              <option value="">Select or Create a playlist</option>
-            </select>
-            <div>
-              <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
-              <button id="deletePlaylistButton" onclick="deletePlaylist()">Delete Playlist</button>
-            </div>
-            <table class="table-striped" id="playlistTable">
-              <thead>
-                <tr id="playlistTableHeader">
-                </tr>
-              </thead>
-              <tbody id="playlistTableBody">
-              </tbody>
-            </table>
-            <button id="playPlaylistReplays" onclick="playConversions(playlistConversions)" style="display:none">Play
-              all
-              Replays</button>
-            <button id="recordPlaylistReplays" onclick="playConversions(playlistConversions, true)"
-              style="display:none">Record all
-              Replays</button>
+          <div>
+            Melee Iso Path:
+            <label id="isoPath"></label>
+            <button id="isoButton" onclick="document.getElementById('isoPathSelector').click()">Select SSBM ISO
+              Path</button>
+            <input type="file" id="isoPathSelector" accept=".iso" hidden />
           </div>
+          <div>
+            Playback Dolphin Path:
+            <label id="playbackPath"></label>
+            <button id="playbackButton" onclick="document.getElementById('playbackPathSelector').click()">Select
+              Playback
+              Dolphin path</button>
+            <input type="file" id="playbackPathSelector" accept=".exe" hidden />
+          </div>
+          <div>
+            preRoll frames
+            <label id="preRoll"></label>
+            <input type="number" id="preRollSelector">
+          </div>
+          <div>
+            postRoll frames
+            <label id="postRoll"></label>
+            <input type="number" id="postRollSelector">
+          </div>
+          <div>
+            OBS websocket password
+            <label id="obsPassword"></label>
+            <input type="text" id="obsPasswordSelector">
+          </div>
+          <div>
+            OBS Port
+            <label id="obsPort"></label>
+            <input type="number" id="obsPortSelector">
+          </div>
+
+
         </div>
+        <div id="playlists" style="display:none">
+          <div>
+            Playlist Name:
+            <input type="text" id="playlistName" value="" placeholder="Enter new playlist name">
+          </div>
+          Load playlist: <select id="playlistDropdown" onchange="loadPlaylist()">
+            <option value="">Select or Create a playlist</option>
+          </select>
+          <div>
+            <button id="playlistButton" onclick="createOrUpdatePlaylist()">Save Playlist</button>
+            <button id="deletePlaylistButton" onclick="deletePlaylist()">Delete Playlist</button>
+          </div>
+          <table class="table-striped" id="playlistTable">
+            <thead>
+              <tr id="playlistTableHeader">
+              </tr>
+            </thead>
+            <tbody id="playlistTableBody">
+            </tbody>
+          </table>
+          <button id="playPlaylistReplays" onclick="playConversions(playlistConversions)" style="display:none">Play
+            all
+            Replays</button>
+          <button id="recordPlaylistReplays" onclick="playConversions(playlistConversions, true)"
+            style="display:none">Record all
+            Replays</button>
+        </div>
+        <div id="react">
+
+        </div>
+      </div>
 
   </window-content>
-<!-- 
-  <script src="https://unpkg.com/vue"></script>
-  <script src="https://unpkg.com/http-vue-loader"></script> -->
+
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- <script>require('@babel/register');</script> -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <script src="photon-browser.js"></script>
+<script>
+  Photon.__baseDir = "./photon";
+</script>
   <script src="mainRenderer.js"></script>
   <script src="settings.js"></script>
   <script src="searchResults.js"></script>
   <script src="playlists.js"></script>
-  <!-- <script src="vueTest.js"></script> -->
+  <script type="text/jsx" src="./components/conversionTable.jsx"></script>
+  <script type="text/jsx" src="./components/searchForm.jsx"></script>
+  <script type="text/babel" src="reactTest.js"></script>
   </body>
 </ph-window>
 
