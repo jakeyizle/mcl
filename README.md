@@ -13,5 +13,6 @@ AI analysis of playlists to predict/suggest additions
 Make the code consisent and look sane
 
 ISSUES:
+Load up is very slow
 First search call is slow
 Need to restart conversion-load process when replay path is set

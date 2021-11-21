@@ -1,6 +1,6 @@
 {
-  "name": "melee-combo-loader",
-  "productName": "melee-combo-loader",
+  "name": "mcl",
+  "productName": "mcl",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": "src/index.js",
@@ -24,7 +24,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "melee-combo-loader"
+            "name": "mcl"
           }
         },
         {
@@ -76,6 +76,7 @@
     "@electron-forge/maker-rpm": "^6.0.0-beta.54",
     "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
     "@electron-forge/maker-zip": "^6.0.0-beta.54",
-    "electron": "12.0.2"
+    "electron": "12.0.2",
+    "electron-prebuilt-compile": "8.2.0"
   }
 }
