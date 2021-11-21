@@ -72,8 +72,7 @@ class ConversionDataGrid extends React.Component {
 
     render() {
         return (
-            // <div style={{ display: 'flex', height: '100%' }}>
-            //     <div style={{ flexGrow: 1 }}>
+
                     <DataGrid rowHeight={100}
                         disableSelectionOnClick
                         rows={this.props.data}
@@ -90,8 +89,7 @@ class ConversionDataGrid extends React.Component {
                         sortingOrder={['desc', 'asc']}
                         disableColumnMenu
                     />
-            //     </div>
-            // </div>
+
         )
 
 
