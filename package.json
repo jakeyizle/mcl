@@ -45,6 +45,10 @@
     }
   },
   "dependencies": {
+    "@emotion/react": "^11.5.0",
+    "@emotion/styled": "^11.3.0",
+    "@mui/material": "^5.1.0",
+    "@mui/x-data-grid": "^5.0.0-beta.7",
     "@slippi/slippi-js": "^5.1.1",
     "better-sqlite3": "^7.4.3",
     "child_process": "^1.0.2",
@@ -54,6 +58,7 @@
     "exec": "^0.2.1",
     "lodash": "^4.17.21",
     "msfmultiselect": "^2.4.0",
+    "multiselect-react-dropdown": "^2.0.7",
     "obs-websocket-js": "^4.0.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

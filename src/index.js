@@ -190,12 +190,15 @@ function initDB() {
     FOREIGN KEY (playlistName) REFERENCES playlists(name),
     FOREIGN KEY (conversionId) REFERENCES conversions(id)
   )`);
+  
   gameStmt.run();
   conversionStmt.run();
   movesStmt.run();
   settingsStmt.run();
   playlistStmt.run();
   playlistConversionStmt.run();
+  let indexStmt = db.prepare('CREATE INDEX IF NOT EXISTS search_index ON conversions (didKill, openingType, attackingPlayer, defendingPlayer, attackingCharacter, defendingCharacter, stage, percent, time, moveCount, startAt)').run();
+
 }
 
 //get all files in all subdirectories
