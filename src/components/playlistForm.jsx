@@ -1,7 +1,8 @@
+import { Button, Select, TextField, Autocomplete, FormControl } from '@mui/material';
 import * as React from 'react';
 
 const db = require('better-sqlite3')('melee.db');
-import {playConversions} from './commonFunctions.js'
+import { playConversions } from './commonFunctions.js'
 
 
 class PlaylistForm extends React.Component {
@@ -11,8 +12,8 @@ class PlaylistForm extends React.Component {
         this.state = { conversions: undefined, playlistDropdown: '', fields: fields, playlistText: '' }
 
         this.alterPlaylist = this.alterPlaylist.bind(this);
-        this.loadPlaylistConversions = this.loadPlaylistConversions.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
+        this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
     }
 
     handleInputChange(event) {
@@ -28,9 +29,11 @@ class PlaylistForm extends React.Component {
         switch (action) {
             case 'create':
                 try {
-                    let playlist = this.state.playlistText;
-                    let insertStmt = db.prepare('INSERT INTO playlists (name) VALUES (?)').run(playlist);
-                    this.setState({ playlistDropdown: playlist })
+                    if (this.state.playlistText.length > 0) {
+                        let playlist = this.state.playlistText;
+                        let insertStmt = db.prepare('INSERT INTO playlists (name) VALUES (?)').run(playlist);
+                        this.setState({ playlistDropdown: playlist })
+                    }
                 } catch (e) {
                     console.log(e);
                 }
@@ -47,32 +50,47 @@ class PlaylistForm extends React.Component {
         }
     }
 
-    loadPlaylistConversions(e) {
-        console.log(e.target);
+    handleAutocompleteInputChange(event, value, name) {
+        let stateValue = value ? value.value : null
+        this.setState({
+            [name]: stateValue
+        })
     }
+
     render() {
-        let playlists = db.prepare('SELECT * from playlists').all().map(x => ({ name: x.name, key: x.name }));
-
+        let playlists = db.prepare('SELECT * from playlists').all().map(x => ({ value: x.name, label: x.name }));
         let playlistConversions = db.prepare('select  * FROM conversions WHERE id IN (SELECT conversionid FROM playlistConversion WHERE playlistName = ?)').all(this.state.playlistDropdown);
-
-
+        console.log(playlists);
         return (
             <div>
                 Playlist Name:
-                <input type="text" placeholder="Enter new playlist name " name="playlistText" value={this.state.playlistText} onChange={this.handleInputChange} />
-                <button id="playlistButton" onClick={(e) => this.alterPlaylist('create', e)}>Save Playlist</button>
-               
-                <select name="playlistDropdown" onChange={this.handleInputChange} value={this.state.playlistDropdown}>
-                    {createDropdownOptions(playlists)}
-                </select>
-                {this.state.playlistDropdown.length > 0 &&
-                    <button id="deletePlaylistButton" onClick={(e) => this.alterPlaylist('delete', e)}>Delete Playlist</button>}
-                {playlistConversions.length > 0 
-                ? <div><ConversionTable conversions={playlistConversions} fields={this.state.fields} />
-                    <button id="playPlaylistReplays" onClick={(e) => playConversions(playlistConversions)}>Play all Replays</button>
-                    <button id="recordPlaylistReplays" onClick={(e) => playConversions(playlistConversions, true)}>Record all Replays</button>
+                <TextField type="text" placeholder="Enter new playlist name " name="playlistText" value={this.state.playlistText} onChange={this.handleInputChange} />
+                <div>
+                    <FormControl sx={{ m: 1, width: 200 }}>
+                        <Autocomplete
+                            name="playlistDropdown"
+                            options={playlists}
+                            renderInput={(params) => (<TextField {...params} label="Playlist" variant="standard" />)}
+                            onChange={(event, value) => this.handleAutocompleteInputChange(event, value, 'playlistDropdown')}
+                            isOptionEqualToValue={(option, value) => option.value === value.value}
+                        />
+                    </FormControl>
+                </div>
+                {/* {this.state.playlistDropdown.length > 0
+                    && */}
+                    <div>
+                        <Button variant="contained" id="playlistButton" onClick={(e) => this.alterPlaylist('create', e)}>Save Playlist</Button>
+                        <Button id="deletePlaylistButton" onClick={(e) => this.alterPlaylist('delete', e)}>Delete Playlist</Button>
                     </div>
-                   : <div>No conversions loaded...</div>
+                {playlistConversions.length > 0
+                    ? <div>
+                        <div style={{ height: '1000px', width: '100%' }}>
+                            <ConversionDataGrid data={playlistConversions} isPlaylistGrid={true} />
+                        </div>
+                        <Button id="playPlaylistReplays" onClick={(e) => playConversions(playlistConversions)}>Play all Replays</Button>
+                        <Button id="recordPlaylistReplays" onClick={(e) => playConversions(playlistConversions, true)}>Record all Replays</Button>
+                    </div>
+                    : <div>No conversions loaded...</div>
                 }
             </div>
 

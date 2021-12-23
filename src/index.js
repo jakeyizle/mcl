@@ -1,30 +1,33 @@
+/* eslint-disable import/no-extraneous-dependencies */
 const {
   app,
   BrowserWindow,
-  ipcMain
+  ipcMain,
 } = require('electron');
 const {
-  Worker
+  Worker,
 } = require('worker_threads');
 
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const db = require('better-sqlite3')('melee.db');
+
 db.pragma('journal_mode = WAL');
+// db.pragma('analysis_limit=400');
+db.pragma('optimize');
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
   app.quit();
 }
 
-var threads = new Set();
-var mainWindow;
+const threads = new Set();
+let mainWindow;
+let invisWindow;
 
 app.on('before-quit', () => {
-  for (let worker of threads) {
-    worker.postMessage('exit');    
-  }
-})
+  threads.forEach((worker) => worker.postMessage('exit'));
+});
 
 const createWindow = () => {
   // Create the browser window.
@@ -33,25 +36,38 @@ const createWindow = () => {
       nodeIntegration: true,
       contextIsolation: false,
       enableRemoteModule: true,
-    }
+    },
   });
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
   mainWindow.once('did-finish-load', () => {
-    console.log('finishedwindowload');
-  })
+  });
   // Open the DevTools.
 };
 
+
+const createInvisWindow = () => {
+  invisWindow = new BrowserWindow({
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
+      
+    }
+  })
+  invisWindow.loadFile(path.join(__dirname, 'preloadRenderer.html'))
+  invisWindow.openDevTools();
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   initDB();
-  createDataWorkers();
+  createInvisWindow();
   createWindow();
+  createDataWorkers();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -74,21 +90,17 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-
-
-ipcMain.handle('loadReplays', async (event, message) => {
-  console.log('loadReplays!!');
+ipcMain.handle('loadReplays', async () => {
   createDataWorkers();
-})
-
+});
 
 //on completion of function, we forward it back to the main window
 ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
-})
+});
 
 async function createDataWorkers() {
-  if (threads.length > 1) {return;}
+  if (threads.length > 1) { return; }
 
   const threadCount = os.cpus().length - 1;
   console.log(`threadcount: ${threadCount}`);
@@ -97,10 +109,10 @@ async function createDataWorkers() {
   const replayPath = settingsStmt.get('replayPath').value;
   const localFiles = await getReplayFiles(replayPath);
 
-  const getFiles = db.prepare('SELECT name from games');
-  const alreadyLoadedFiles = getFiles.all().map(x => x.name);
+  const dbFiles = db.prepare('SELECT name from games');
+  const alreadyLoadedFiles = dbFiles.all().map((x) => x.name);
 
-  const files = localFiles.filter(file => !alreadyLoadedFiles.includes(file.name));
+  const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
   console.log(files.length);
 
   const max = files.length;
@@ -111,7 +123,7 @@ async function createDataWorkers() {
     mainWindow.webContents.send('startGameLoading', files.length);
     for (let i = 0; i < threadCount; i++) {
       const myStart = start;
-      //final worker has to take remainder
+      // final worker has to take remainder
       const myRange = i == threadCount - 1 ? finalRange : range;
       console.log({
         myStart,

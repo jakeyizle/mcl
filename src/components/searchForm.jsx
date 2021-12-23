@@ -120,7 +120,7 @@ class SearchForm extends React.Component {
       whereString += ' AND didKill = 1'
       //special case cause sqlite doesnt store true/false?
     };
-
+    //need to compare performance versues executing a count statement with cache logic
     let query = `WITH cte AS(SELECT count(*) total FROM conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
     query += ` ORDER BY ${this.state.sortField} ${this.state.sortDir} LIMIT ${this.state.pageSize} OFFSET ${offset}`
     console.log(query);

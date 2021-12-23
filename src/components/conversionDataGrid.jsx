@@ -17,8 +17,9 @@ class ConversionDataGrid extends React.Component {
             {
                 field: 'playList', headerName: 'Playlists', flex: 2, sortable: false,
                 renderCell: (params) => {
+                    //update is slow if i use value
                     return (
-                        <FormControl sx={{ m: 1, width: 100 }}>
+                        <FormControl sx={{ m: 1, width: 1000 }}>
                             <Autocomplete
                                 options={playlistAutocompleteOptions}
                                 getOptionLabel={(option) => option.label}
@@ -35,7 +36,7 @@ class ConversionDataGrid extends React.Component {
                     )
                 }
             },
-            { field: 'playReplay', sortable: false, type: 'actions', headerName: 'Play Replay', flex: 1, renderCell: (params) => <Button onClick={(e) => playConversions([params.row], false)}>Play Replay</Button> } ,
+            { field: 'playReplay', sortable: false, type: 'actions', headerName: 'Play Replay', flex: 1, renderCell: (params) => <Button onClick={(e) => playConversions([params.row], false)}>Play Replay</Button> },
             { field: 'startAt', type: 'date', headerName: 'Match time', flex: 1.5 },
             { field: 'attackingPlayer', headerName: 'Attacking Player', flex: 1 },
             { field: 'attackingCharacter', headerName: 'Attacking Character', flex: 1, valueFormatter: (params) => getKeyByValue(Characters, params.value) },
@@ -47,6 +48,9 @@ class ConversionDataGrid extends React.Component {
             { field: 'didKill', type: 'boolean', headerName: 'Killed?', flex: .8 },
             { field: 'moveCount', type: 'number', headerName: 'Moves', flex: 0.65 }
         ]
+        if (this.props.isPlaylistGrid) {
+            columns.forEach(x=>x.sortable = false);
+        }
         this.state = {
             columns: columns
         }
@@ -58,7 +62,6 @@ class ConversionDataGrid extends React.Component {
 
     }
     handleChange(event, value, reason, details, conversionId) {
-        console.log(reason);
         if (reason === 'removeOption') {
             let playlist = details.option.label;
             let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').run(playlist, conversionId);
@@ -72,25 +75,27 @@ class ConversionDataGrid extends React.Component {
 
     render() {
         return (
-
-                    <DataGrid rowHeight={100}
-                        disableSelectionOnClick
-                        rows={this.props.data}
-                        columns={this.state.columns}
-                        pagination
-                        rowsPerPageOptions={[10, 20, 50, 100]}
-                        onPageSizeChange={(newPageSize) => this.props.handlePageSize(newPageSize)}
-                        pageSize={this.props.pageSize}
-                        rowCount={this.props.maxCount}
-                        paginationMode="server"
-                        onPageChange={(pageNumber)=>this.props.handlePageChange(pageNumber)}
-                        sortingMode="server"
-                        onSortModelChange={(e) =>this.props.handleSortModelChange(e)}
-                        sortingOrder={['desc', 'asc']}
-                        disableColumnMenu
-                    />
-
-        )
+            <span>
+            {this.props.isPlaylistGrid
+            ? <DataGrid rowHeight={100} disableSelectionOnClick
+                rows={this.props.data}
+                columns={this.state.columns} disableColumnMenu />
+            : <DataGrid rowHeight={100}
+                disableSelectionOnClick
+                rows={this.props.data}
+                columns={this.state.columns}
+                pagination
+                rowsPerPageOptions={[10, 20, 50, 100]}
+                onPageSizeChange={(newPageSize) => this.props.handlePageSize(newPageSize)}
+                pageSize={this.props.pageSize}
+                rowCount={this.props.maxCount}
+                paginationMode="server"
+                onPageChange={(pageNumber) => this.props.handlePageChange(pageNumber)}
+                sortingMode="server"
+                onSortModelChange={(e) => this.props.handleSortModelChange(e)}
+                sortingOrder={['desc', 'asc']}
+                disableColumnMenu
+            />} </span>      )
 
 
     }
