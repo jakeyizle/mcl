@@ -14,6 +14,7 @@ class PlaylistForm extends React.Component {
         this.alterPlaylist = this.alterPlaylist.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
+        this.handleOrderChange = this.handleOrderChange.bind(this);
     }
 
     handleInputChange(event) {
@@ -57,10 +58,24 @@ class PlaylistForm extends React.Component {
         })
     }
 
+    handleOrderChange(params, orderChange) {
+        let playlistName = params.row.playlistName;
+        let conversionId = params.row.id;
+        let oldPosition = params.row.playlistPosition;
+        let newPosition = params.row.playlistPosition + orderChange
+
+        let otherConversionUpdate = db.prepare('UPDATE playlistconversion SET playlistPosition = ? WHERE playlistName = ? AND playlistPosition = ?').run(oldPosition, playlistName, newPosition);
+        let thisConversionUpdate = db.prepare('UPDATE playlistconversion SET playlistPosition = ? WHERE playlistName = ? AND conversionId = ?').run(newPosition, playlistName, conversionId)
+        //should be using state...
+        this.forceUpdate();
+    }
+
     render() {
         let playlists = db.prepare('SELECT * from playlists').all().map(x => ({ value: x.name, label: x.name }));
-        let playlistConversions = db.prepare('select  * FROM conversions WHERE id IN (SELECT conversionid FROM playlistConversion WHERE playlistName = ?)').all(this.state.playlistDropdown);
-        console.log(playlists);
+        let playlistConversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(this.state.playlistDropdown);
+        //this is how we deal with "undefined" orders
+        playlistConversions = playlistConversions?.sort((a, b) => a.playlistPosition - b.playlistPosition);        
+
         return (
             <div>
                 Playlist Name:
@@ -76,16 +91,15 @@ class PlaylistForm extends React.Component {
                         />
                     </FormControl>
                 </div>
-                {/* {this.state.playlistDropdown.length > 0
-                    && */}
-                    <div>
-                        <Button variant="contained" id="playlistButton" onClick={(e) => this.alterPlaylist('create', e)}>Save Playlist</Button>
+                <Button variant="contained" id="playlistButton" onClick={(e) => this.alterPlaylist('create', e)}>Save Playlist</Button>
+                {this.state.playlistDropdown.length > 0
+                    &&
                         <Button id="deletePlaylistButton" onClick={(e) => this.alterPlaylist('delete', e)}>Delete Playlist</Button>
-                    </div>
+                }
                 {playlistConversions.length > 0
                     ? <div>
                         <div style={{ height: '1000px', width: '100%' }}>
-                            <ConversionDataGrid data={playlistConversions} isPlaylistGrid={true} />
+                            <ConversionDataGrid data={playlistConversions.sort((a, b) => a.playlistPosition - b.playlistPosition)} isPlaylistGrid={true} handleOrderChange={this.handleOrderChange} />
                         </div>
                         <Button id="playPlaylistReplays" onClick={(e) => playConversions(playlistConversions)}>Play all Replays</Button>
                         <Button id="recordPlaylistReplays" onClick={(e) => playConversions(playlistConversions, true)}>Record all Replays</Button>
