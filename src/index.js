@@ -153,7 +153,7 @@ async function createDataWorkers() {
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,
-      path Primary Key)`);
+      path Primary Key)`).run();
   const conversionStmt = db.prepare(`CREATE TABLE IF NOT EXISTS conversions (
       id Primary Key,
       playerIndex,
@@ -176,7 +176,7 @@ function initDB() {
       ,moveCount
       ,startAt
       ,FOREIGN KEY (filepath) REFERENCES games(path)
-  )`);
+  )`).run();
   const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (
       conversionMoveId INTEGER Primary Key,
       conversionId,
@@ -186,14 +186,14 @@ function initDB() {
       damage,
       moveIndex
       ,FOREIGN KEY (conversionId) REFERENCES conversions(id)
-  )`);
+  )`).run();
   const settingsStmt = db.prepare(`CREATE TABLE IF NOT EXISTS settings (
     key Primary Key,
     value
-  )`);
+  )`).run();
   const playlistStmt = db.prepare(`CREATE TABLE IF NOT EXISTS playlists (
     name Primary Key
-  )`);
+  )`).run();
   const playlistConversionStmt = db.prepare(`CREATE TABLE IF NOT EXISTS playlistConversion (
     playlistName,
     conversionId,
@@ -201,15 +201,9 @@ function initDB() {
     PRIMARY KEY (playlistName, conversionId),
     FOREIGN KEY (playlistName) REFERENCES playlists(name),
     FOREIGN KEY (conversionId) REFERENCES conversions(id)
-  )`);
+  )`).run();
   
-  gameStmt.run();
-  conversionStmt.run();
-  movesStmt.run();
-  settingsStmt.run();
-  playlistStmt.run();
-  playlistConversionStmt.run();
-  db.prepare('CREATE INDEX IF NOT EXISTS search_index ON conversions (didKill, openingType, attackingPlayer, defendingPlayer, attackingCharacter, defendingCharacter, stage, percent, time, moveCount, startAt)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS search_index_2 ON conversions (attackingPlayer, attackingCharacter, defendingPlayer, defendingCharacter, stage, percent, moveCount, didKill)').run();
   db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
   
 }
