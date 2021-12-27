@@ -95,3 +95,4 @@ out/
 /melee.db-shm
 /melee.db-wal
 /src/tempMoments.json
+/sqlite3.exe

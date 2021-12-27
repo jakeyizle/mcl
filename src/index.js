@@ -209,8 +209,9 @@ function initDB() {
   settingsStmt.run();
   playlistStmt.run();
   playlistConversionStmt.run();
-  let indexStmt = db.prepare('CREATE INDEX IF NOT EXISTS search_index ON conversions (didKill, openingType, attackingPlayer, defendingPlayer, attackingCharacter, defendingCharacter, stage, percent, time, moveCount, startAt)').run();
-
+  db.prepare('CREATE INDEX IF NOT EXISTS search_index ON conversions (didKill, openingType, attackingPlayer, defendingPlayer, attackingCharacter, defendingCharacter, stage, percent, time, moveCount, startAt)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
+  
 }
 
 //get all files in all subdirectories
