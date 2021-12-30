@@ -9,11 +9,11 @@ class SearchForm extends React.Component {
     super(props)
     let fields = ['playList', 'playReplay', 'startAt', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
     this.state = {
-      attackingPlayerCode: "",
+      attackingPlayerCode: '',
       attackingCharacter: '',
-      defendingPlayerCode: "",
+      defendingPlayerCode: '',
       defendingCharacter: '',
-      stage: "",
+      stage: '',
       didKill: false,
       minimumDamage: '',
       maximumDamage: '',
@@ -26,7 +26,7 @@ class SearchForm extends React.Component {
       sortDir: 'desc',
       fields: fields,
       conversionCount: undefined,
-      pageSize: 20,
+      pageSize: 5,
     }
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
@@ -79,24 +79,24 @@ class SearchForm extends React.Component {
     //dynamic search solution
     let queryObject = {};
     let whereString = 'WHERE 1=1';
-    if (this.state.attackingPlayerCode != "") {
+    if (this.state.attackingPlayerCode != '') {
       whereString += ' AND attackingPlayer = @attackingPlayerCode'
       queryObject.attackingPlayerCode = this.state.attackingPlayerCode;
     };
-    if (this.state.attackingCharacter != "" || this.state.attackingCharacter === 0) {
+    if (this.state.attackingCharacter != '' || this.state.attackingCharacter === 0) {
       whereString += ' AND attackingCharacter = @attackingCharacter'
       //parseint needed for sqlite comparison
       queryObject.attackingCharacter = parseInt(this.state.attackingCharacter);
     };
-    if (this.state.defendingPlayerCode != "") {
+    if (this.state.defendingPlayerCode != '') {
       whereString += ' AND defendingPlayer = @defendingPlayerCode'
       queryObject.defendingPlayerCode = this.state.defendingPlayerCode;
     };
-    if (this.state.defendingCharacter != "" || this.state.defendingCharacter === 0) {
+    if (this.state.defendingCharacter != '' || this.state.defendingCharacter === 0) {
       whereString += ' AND defendingCharacter = @defendingCharacter'
       queryObject.defendingCharacter = parseInt(this.state.defendingCharacter);
     };
-    if (this.state.stage != "" && this.state.stage) {
+    if (this.state.stage != '' && this.state.stage) {
       whereString += ' AND stage = @stage'
       queryObject.stage = parseInt(this.state.stage);
     };
@@ -124,10 +124,12 @@ class SearchForm extends React.Component {
     let query = `WITH cte AS(SELECT count(*) total FROM conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
     query += ` ORDER BY ${this.state.sortField} ${this.state.sortDir} LIMIT ${this.state.pageSize} OFFSET ${offset}`
     console.log(query);
+    console.log(queryObject);
     let prepQuery = db.prepare(query);
     let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
+    console.log(searchConversions);
     let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
-    this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0].total });
+    this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
   }
 
   setPage(pageNumber, event) {

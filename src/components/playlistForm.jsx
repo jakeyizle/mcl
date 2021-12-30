@@ -17,27 +17,19 @@ class PlaylistForm extends React.Component {
             fields: fields,
         }
         this.alterPlaylist = this.alterPlaylist.bind(this);
-        this.handleInputChange = this.handleInputChange.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
         this.handleOrderChange = this.handleOrderChange.bind(this);
     }
 
-    handleInputChange(event) {
-        const target = event.target;
-        const value = target.type === 'checkbox' ? target.checked : target.value;
-        const name = target.name;
-        this.setState({
-            [name]: value
-        });
-    }
+
 
     alterPlaylist(action, e) {
-        switch (action) {            
+        switch (action) {
             case 'delete':
                 let playlist = this.state.selectedPlaylist;
                 let mapTableDelete = db.prepare('DELETE FROM playlistConversion where playlistName = ?').run(playlist);
                 let playlistTableDelete = db.prepare('DELETE FROM playlists where name = ?').run(playlist);
-                let playlists = this.state.playlists.filter(x=> x.value != playlist);
+                let playlists = this.state.playlists.filter(x => x.value != playlist);
                 this.setState({ selectedPlaylist: '', conversions: '', playlists: playlists });
                 break;
         }
@@ -45,6 +37,7 @@ class PlaylistForm extends React.Component {
 
     handleAutocompleteInputChange(event, value, name) {
         if (value === null || '') {
+            //otherwise this fires when backspacing through field
             if (event.type === 'change') { return };
             this.setState({
                 [name]: '',
@@ -53,23 +46,23 @@ class PlaylistForm extends React.Component {
             return;
         }
 
-        let playlistValue = value?.value || value;        
+        let playlistValue = value?.value || value;
         if (!this.state.playlists.some(s => s.value === playlistValue)) {
             let insertStmt = db.prepare('INSERT INTO playlists (name) VALUES (?)').run(playlistValue);
-            let playlists = this.state.playlists.concat([{label: playlistValue, value: playlistValue}])
+            let playlists = this.state.playlists.concat([{ label: playlistValue, value: playlistValue }])
             this.setState({
                 [name]: playlistValue || '',
                 playlists: playlists,
                 conversions: ''
             })
         } else {
-            let conversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(playlistValue);            
+            let conversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(playlistValue);
             console.log(conversions);
             this.setState({
                 [name]: playlistValue || '',
                 conversions: conversions
             })
-        }        
+        }
 
     }
 
@@ -84,14 +77,10 @@ class PlaylistForm extends React.Component {
         let conversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(this.state.selectedPlaylist);
         this.setState({
             conversions: conversions
-        })            
-
-        //should be using state...
-        this.forceUpdate();
+        })
     }
 
-    render() {        
-
+    render() {
         return (
             <div>
                 <div>
@@ -103,8 +92,7 @@ class PlaylistForm extends React.Component {
                             renderInput={(params) => (<TextField {...params} label="Playlist" variant="standard" />)}
                             onChange={(event, value) => {
                                 this.handleAutocompleteInputChange(event, value, 'selectedPlaylist')
-                            }
-                            }
+                            }}
                             filterOptions={(options, params) => {
                                 const filtered = filter(options, params);
                                 const { inputValue } = params;
@@ -118,8 +106,8 @@ class PlaylistForm extends React.Component {
                                 }
                                 return filtered;
                             }}
-                            getOptionLabel={(option) => {   
-                                return option.label || option;                             
+                            getOptionLabel={(option) => {
+                                return option.label || option;
                             }}
                             freeSolo
                         />
@@ -141,9 +129,9 @@ class PlaylistForm extends React.Component {
                         <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)}>Play all Replays</Button>
                         <Button id="recordPlaylistReplays" onClick={(e) => playConversions(this.state.conversions, true)}>Record all Replays</Button>
                     </div>
-                    : this.state.selectedPlaylist === '' 
-                    ? <div>Select/Create a playlist </div>
-                    : <div>No conversions loaded...</div>
+                    : this.state.selectedPlaylist === ''
+                        ? <div>Select/Create a playlist </div>
+                        : <div>No conversions loaded...</div>
                 }
             </div>
 
