@@ -15,15 +15,15 @@ class SearchForm extends React.Component {
       defendingCharacter: '',
       stage: "",
       didKill: false,
-      minimumDamage: undefined,
-      maximumDamage: undefined,
-      minimumMove: undefined,
-      maximumMove: undefined,
+      minimumDamage: '',
+      maximumDamage: '',
+      minimumMove: '',
+      maximumMove: '',
       conversions: [],
       pageNumber: 0,
       maxPageNumber: undefined,
       sortField: 'startAt',
-      sortDir: 'DESC',
+      sortDir: 'desc',
       fields: fields,
       conversionCount: undefined,
       pageSize: 20,
@@ -83,7 +83,7 @@ class SearchForm extends React.Component {
       whereString += ' AND attackingPlayer = @attackingPlayerCode'
       queryObject.attackingPlayerCode = this.state.attackingPlayerCode;
     };
-    if (this.state.attackingCharacter != "" && this.state.attackingCharacter) {
+    if (this.state.attackingCharacter != "" || this.state.attackingCharacter === 0) {
       whereString += ' AND attackingCharacter = @attackingCharacter'
       //parseint needed for sqlite comparison
       queryObject.attackingCharacter = parseInt(this.state.attackingCharacter);
@@ -92,7 +92,7 @@ class SearchForm extends React.Component {
       whereString += ' AND defendingPlayer = @defendingPlayerCode'
       queryObject.defendingPlayerCode = this.state.defendingPlayerCode;
     };
-    if (this.state.defendingCharacter != "" && this.state.defendingCharacter) {
+    if (this.state.defendingCharacter != "" || this.state.defendingCharacter === 0) {
       whereString += ' AND defendingCharacter = @defendingCharacter'
       queryObject.defendingCharacter = parseInt(this.state.defendingCharacter);
     };
@@ -138,7 +138,7 @@ class SearchForm extends React.Component {
 
   handleSortModelChange(event) {
     console.log(event);
-    this.setState({sortDir: event[0].sort, sortField: event[0].field} , 
+    this.setState({sortDir: event[0].sort, sortField: event[0].field}, 
       () => this.getConversions())
   }
 
@@ -210,7 +210,9 @@ class SearchForm extends React.Component {
           {this.state.conversions.length > 0 &&
             <div style={{ height: '1000px', width: '100%' }}>
               <ConversionDataGrid data={this.state.conversions} maxCount={this.state.conversionCount} handlePageChange={(pageNumber) => this.setPage(pageNumber)}
-              handleSortModelChange={(e) => this.handleSortModelChange(e)} handlePageSize={(newPageSize) => this.handlePageSize(newPageSize)}  pageSize={this.state.pageSize} />
+              handleSortModelChange={(e) => this.handleSortModelChange(e)} handlePageSize={(newPageSize) => this.handlePageSize(newPageSize)}  pageSize={this.state.pageSize} 
+              sortModel={[{field: this.state.sortField, sort: this.state.sortDir}]}
+              />
             </div>
           }
         </Box>

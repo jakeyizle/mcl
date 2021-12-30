@@ -9,7 +9,7 @@ const OBSWebsocket = require('obs-websocket-js');
 
 exports.playConversions = function playConversions(conversions, recordGame) {
     const settingsStmt = db.prepare('SELECT value from settings where key = ?');
-    const playbackPath = settingsStmt.get('playbackPath').value;
+    const playbackPath = settingsStmt.get('dolphinPath').value;
     const isoPath = settingsStmt.get('isoPath').value;
     const preRoll = settingsStmt.get('preRoll').value || 0;
     const postRoll = settingsStmt.get('postRoll').value || 0;

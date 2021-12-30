@@ -54,19 +54,19 @@ class ConversionDataGrid extends React.Component {
         if (this.props.isPlaylistGrid) {
             columns.unshift({
                 field: 'Order', flex: 0.65, renderCell: (params) => {
-                    let playlistPositions = this.props.data.map(x=>parseInt(x.playlistPosition));
+                    let playlistPositions = this.props.data.map(x => parseInt(x.playlistPosition));
                     let max = Math.max(...playlistPositions)
                     let isFirst = params.row.playlistPosition == 1;
                     let isLast = params.row.playlistPosition == max
                     return (
                         <ButtonGroup orientation="vertical">
-                            <Button onClick={(e) => this.props.handleOrderChange(params, -1)} disabled={isFirst}>&#8593;</Button>
-                            <Button onClick={(e) => this.props.handleOrderChange(params, 1)} disabled={isLast}>&#8595;</Button>
+                            <Button onClick={(e) => this.props.onOrderChange(params, -1)} disabled={isFirst}>&#8593;</Button>
+                            <Button onClick={(e) => this.props.onOrderChange(params, 1)} disabled={isLast}>&#8595;</Button>
                         </ButtonGroup>
                     )
                 }
             }, {
-                field:'playlistPosition'            
+                field: 'playlistPosition'
             })
             columns.forEach(x => x.sortable = false);
         }
@@ -97,11 +97,13 @@ class ConversionDataGrid extends React.Component {
         return (
             <span>
                 {this.props.isPlaylistGrid
-                    ? <DataGrid rowHeight={100} 
+                    ? <DataGrid rowHeight={100}
                         rows={this.props.data}
-                        columns={this.state.columns} disableColumnMenu />
+                        columns={this.state.columns}
+                        disableColumnMenu 
+                        rowsPerPageOptions={[100]}
+                        />
                     : <DataGrid rowHeight={100}
-                        disableSelectionOnClick
                         rows={this.props.data}
                         columns={this.state.columns}
                         pagination
@@ -115,10 +117,9 @@ class ConversionDataGrid extends React.Component {
                         onSortModelChange={(e) => this.props.handleSortModelChange(e)}
                         sortingOrder={['desc', 'asc']}
                         disableColumnMenu
-                    />}
-            </span>)
-
-
+                        sortModel={this.props.sortModel} />}
+            </span>
+        )
     }
 }
 
