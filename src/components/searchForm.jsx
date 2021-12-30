@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Characters, Stages, CharacterStrings, StageStrings, moves } from '../static/meleeIds.js';
 // import Button from '@mui/material/Button';
 import { TextField, Button, Checkbox, Box, FormControlLabel, Select, FormControl, Autocomplete, MenuItem, Grid } from '@mui/material';
+import { isNull } from 'lodash';
 const db = require('better-sqlite3')('melee.db');
 
 class SearchForm extends React.Component {
@@ -9,9 +10,9 @@ class SearchForm extends React.Component {
     super(props)
     let fields = ['playList', 'playReplay', 'startAt', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
     this.state = {
-      attackingPlayerCode: '',
+      attackingPlayerCode: null,
       attackingCharacter: '',
-      defendingPlayerCode: '',
+      defendingPlayerCode: null,
       defendingCharacter: '',
       stage: '',
       didKill: false,
@@ -51,6 +52,8 @@ class SearchForm extends React.Component {
       })
     }
 
+    this.attackingPlayers = db.prepare('SELECT DISTINCT	attackingPlayer FROM conversions').all().map(x => x.attackingPlayer).filter(x => x);
+    this.defendingPlayers = db.prepare('SELECT DISTINCT	defendingPlayer FROM conversions').all().map(x => x.defendingPlayer).filter(x => x);
 
   }
 
@@ -64,7 +67,7 @@ class SearchForm extends React.Component {
   }
 
   handleAutocompleteInputChange(event, value, name) {
-    let stateValue = value ? value.value : null
+    let stateValue = value?.value || value || null;
     this.setState({
       [name]: stateValue
     })
@@ -75,12 +78,10 @@ class SearchForm extends React.Component {
     let offset = (this.state.pageNumber) * this.state.pageSize;
 
     //TODO build query better
-    // let itemsPerPage = document.getElementById('itemsPerPage').value || 20;
-
     //dynamic search solution
     let queryObject = {};
     let whereString = 'WHERE 1=1';
-    if (this.state.attackingPlayerCode != '') {
+    if (this.state.attackingPlayerCode && this.state.attackingPlayerCode != '') {
       whereString += ' AND attackingPlayer = @attackingPlayerCode'
       queryObject.attackingPlayerCode = this.state.attackingPlayerCode;
     };
@@ -89,7 +90,7 @@ class SearchForm extends React.Component {
       //parseint needed for sqlite comparison
       queryObject.attackingCharacter = parseInt(this.state.attackingCharacter);
     };
-    if (this.state.defendingPlayerCode != '') {
+    if (this.state.defendingPlayerCode && this.state.defendingPlayerCode != '') {
       whereString += ' AND defendingPlayer = @defendingPlayerCode'
       queryObject.defendingPlayerCode = this.state.defendingPlayerCode;
     };
@@ -127,34 +128,30 @@ class SearchForm extends React.Component {
     //need to compare performance versues executing a count statement with cache logic
     let query = `WITH cte AS(SELECT count(*) total FROM conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
     query += ` ORDER BY ${this.state.sortField} ${this.state.sortDir} LIMIT ${this.state.pageSize} OFFSET ${offset}`
-    console.log(query);
-    console.log(queryObject);
+
     let prepQuery = db.prepare(query);
     let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
-    console.log(searchConversions);
     let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
     this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
   }
 
   setPage(pageNumber, event) {
-    if (event) {event.preventDefault()};
+    if (event) { event.preventDefault() };
     this.setState({ pageNumber: pageNumber },
       () => this.getConversions())
   }
 
   handleSortModelChange(event) {
-    console.log(event);
-    this.setState({sortDir: event[0].sort, sortField: event[0].field}, 
+    this.setState({ sortDir: event[0].sort, sortField: event[0].field },
       () => this.getConversions())
   }
 
   handlePageSize(newPageSize) {
-    this.setState({pageSize: newPageSize}, 
+    this.setState({ pageSize: newPageSize },
       () => this.getConversions())
   }
 
   render() {
-
     return (
       <div>
         <Box onSubmit={(e) => this.setPage(0, e)}
@@ -167,7 +164,18 @@ class SearchForm extends React.Component {
         >
           <Grid container >
             <Grid item>
-              <TextField label="Attacking Player Code" name="attackingPlayerCode" value={this.state.attackingPlayerCode} onChange={this.handleInputChange} type="text" placeholder="BLAH#123" />
+              <Autocomplete
+                name="attackingPlayerCode"
+                options={this.attackingPlayers}
+                value={this.state.attackingPlayerCode}
+                renderInput={(params) => (<TextField {...params} label="Attacking Player Code" variant="standard" />)}
+                onChange={(event, value) => this.handleAutocompleteInputChange(event, value, 'attackingPlayerCode')}
+                getOptionLabel={(option) => {
+                  return option
+                }}
+                isOptionEqualToValue={(option, value) => option === value}
+
+              />
             </Grid>
             <Grid item>
               <Autocomplete
@@ -181,8 +189,17 @@ class SearchForm extends React.Component {
           </Grid>
           <Grid container >
             <Grid item>
-              <TextField label="Defending Player Code" name="defendingPlayerCode" value={this.state.defendingPlayerCode} type="text" placeholder="BLAH#123" onChange={this.handleInputChange} />
-            </Grid>
+            <Autocomplete
+                name="defendingPlayerCode"
+                options={this.attackingPlayers}
+                value={this.state.defendingPlayerCode}
+                renderInput={(params) => (<TextField {...params} label="Defending Player Code" variant="standard" />)}
+                onChange={(event, value) => this.handleAutocompleteInputChange(event, value, 'defendingPlayerCode')}
+                getOptionLabel={(option) => {
+                  return option
+                }}
+              />            
+              </Grid>
             <Grid item>
               <Autocomplete
                 name="defendingCharacter"
@@ -216,14 +233,15 @@ class SearchForm extends React.Component {
           </div>
           <Button type="submit" variant="contained">Search Conversions</Button>
 
-          {this.state.conversions.length > 0 &&
-            <div style={{ height: '1000px', width: '100%' }}>
+          {this.state.conversions.length > 0 
+            ? <div style={{ height: '1000px', width: '100%' }}>
               <ConversionDataGrid data={this.state.conversions} maxCount={this.state.conversionCount} handlePageChange={(pageNumber) => this.setPage(pageNumber)}
-              handleSortModelChange={(e) => this.handleSortModelChange(e)} handlePageSize={(newPageSize) => this.handlePageSize(newPageSize)}  pageSize={this.state.pageSize} 
-              sortModel={[{field: this.state.sortField, sort: this.state.sortDir}]}
+                handleSortModelChange={(e) => this.handleSortModelChange(e)} handlePageSize={(newPageSize) => this.handlePageSize(newPageSize)} pageSize={this.state.pageSize}
+                sortModel={[{ field: this.state.sortField, sort: this.state.sortDir }]}
               />
             </div>
-          }
+           :  <div> No Conversions Found</div>
+           }
         </Box>
       </div>
 

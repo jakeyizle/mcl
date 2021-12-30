@@ -205,7 +205,8 @@ function initDB() {
   
   db.prepare('CREATE INDEX IF NOT EXISTS search_index_2 ON conversions (attackingPlayer, attackingCharacter, defendingPlayer, defendingCharacter, stage, percent, moveCount, didKill)').run();
   db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
-  
+  db.prepare('CREATE INDEX IF NOT EXISTS attacking_index ON conversions (attackingPlayer)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS defending_index ON conversions (defendingPlayer)').run();
 }
 
 //get all files in all subdirectories

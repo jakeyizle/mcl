@@ -2,8 +2,6 @@ The idea behind this project is to go over all of your SSBM slippi replay files 
 
 
 TODO (no particular order):
-Refactor playlist page to use Material UI
-Add persistent ordering of conversions in playlists, that can be changed by user
 Add option for choosing between OBS recording and dolphin framedumps  
 Add option for gfycat uploading  
 Add option for recordings of playlists to be split into different files  
