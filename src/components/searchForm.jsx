@@ -15,6 +15,7 @@ class SearchForm extends React.Component {
       defendingCharacter: '',
       stage: '',
       didKill: false,
+      excludeAssigned: false,
       minimumDamage: '',
       maximumDamage: '',
       minimumMove: '',
@@ -120,6 +121,9 @@ class SearchForm extends React.Component {
       whereString += ' AND didKill = 1'
       //special case cause sqlite doesnt store true/false?
     };
+    if (this.state.excludeAssigned) {
+      whereString += ' AND id NOT IN (SELECT conversionId from playlistconversion)'
+    }
     //need to compare performance versues executing a count statement with cache logic
     let query = `WITH cte AS(SELECT count(*) total FROM conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
     query += ` ORDER BY ${this.state.sortField} ${this.state.sortDir} LIMIT ${this.state.pageSize} OFFSET ${offset}`
@@ -206,6 +210,9 @@ class SearchForm extends React.Component {
           <div>
             <TextField label="Minimum move count" type="number" placeholder="Minimum moves in combo" onChange={this.handleInputChange} name="minimumMove" value={this.state.minimumMove} />
             <TextField label="Maximum move count" type="number" placeholder="Max moves in combo" onChange={this.handleInputChange} name="maximumMove" value={this.state.maximumMove} />
+          </div>
+          <div>
+            <FormControlLabel control={<Checkbox />} label="Exclude assigned conversions?" onChange={this.handleInputChange} name="excludeAssigned" checked={this.state.excludeAssigned} />
           </div>
           <Button type="submit" variant="contained">Search Conversions</Button>
 
