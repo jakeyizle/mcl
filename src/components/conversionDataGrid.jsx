@@ -70,9 +70,8 @@ class ConversionDataGrid extends React.Component {
             })
             columns.forEach(x => x.sortable = false);
         }
-        this.state = {
-            columns: columns
-        }
+        this.columns = columns;
+        
         this.handleChange = this.handleChange.bind(this);
     }
 
@@ -80,8 +79,11 @@ class ConversionDataGrid extends React.Component {
         return db.prepare('SELECT * FROM playlistConversion WHERE conversionId = ?').all(conversionId).map(y => ({ label: y.playlistName }));
     }
     handleChange(event, value, reason, details, conversionId) {
+        //when remove a conversion from playlist, must update playlistPosition of other conversions 
         if (reason === 'removeOption') {
             let playlist = details.option.label;
+            let playlistPosition = db.prepare('SELECT playlistPosition FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').get(playlist, conversionId);
+            let playlistPositionUpdate = db.prepare('UPDATE playlistConversion SET playlistPosition = playlistPosition - 1 WHERE playlistName = ? and playlistPosition > ?').run(playlist, playlistPosition.playlistPosition);
             let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').run(playlist, conversionId);
         } else if (reason === 'selectOption') {
             let playlist = details.option.label;
@@ -89,6 +91,11 @@ class ConversionDataGrid extends React.Component {
             let playlistPosition = dbPlaylistPosition?.playlistPosition + 1 || 1;
             let insertStmt = db.prepare('INSERT INTO playlistConversion (playlistName, conversionId, playlistPosition) VALUES (?, ?, ?)').run(playlist, conversionId, playlistPosition)
         } else if (reason === 'clear') {
+            let conversionInfo = db.prepare('SELECT playlistName, playlistPosition FROM playlistConversion WHERE conversionId = ?').all(conversionId);
+            for (let i = 0; i < conversionInfo.length; i ++) {
+                let playlistPositionUpdateStmt = db.prepare('UPDATE playlistConversion SET playlistPosition = playlistPosition - 1 WHERE playlistName = ? and playlistPosition > ?')
+                let playlistPositionUpdate = playlistPositionUpdateStmt.run(conversionInfo[i].playlistName, conversionInfo[i].playlistPosition);
+            }
             let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE conversionId = ?').run(conversionId);
         }
     }
@@ -99,13 +106,13 @@ class ConversionDataGrid extends React.Component {
                 {this.props.isPlaylistGrid
                     ? <DataGrid rowHeight={100}
                         rows={this.props.data}
-                        columns={this.state.columns}
+                        columns={this.columns}
                         disableColumnMenu 
                         rowsPerPageOptions={[100]}
                         />
                     : <DataGrid rowHeight={100}
                         rows={this.props.data}
-                        columns={this.state.columns}
+                        columns={this.columns}
                         pagination
                         rowsPerPageOptions={[1, 2, 5, 10]}
                         onPageSizeChange={(newPageSize) => this.props.handlePageSize(newPageSize)}

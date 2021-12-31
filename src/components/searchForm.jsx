@@ -173,8 +173,6 @@ class SearchForm extends React.Component {
                 getOptionLabel={(option) => {
                   return option
                 }}
-                isOptionEqualToValue={(option, value) => option === value}
-
               />
             </Grid>
             <Grid item>
