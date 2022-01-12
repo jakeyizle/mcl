@@ -79,7 +79,7 @@ class ConversionDataGrid extends React.Component {
         return db.prepare('SELECT * FROM playlistConversion WHERE conversionId = ?').all(conversionId).map(y => ({ label: y.playlistName }));
     }
     handleChange(event, value, reason, details, conversionId) {
-        //when remove a conversion from playlist, must update playlistPosition of other conversions 
+        //when remove a conversion from playlist, must update playlistPosition of other conversions in that playlist
         if (reason === 'removeOption') {
             let playlist = details.option.label;
             let playlistPosition = db.prepare('SELECT playlistPosition FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').get(playlist, conversionId);
@@ -124,7 +124,9 @@ class ConversionDataGrid extends React.Component {
                         onSortModelChange={(e) => this.props.handleSortModelChange(e)}
                         sortingOrder={['desc', 'asc']}
                         disableColumnMenu
-                        sortModel={this.props.sortModel} />}
+                        sortModel={this.props.sortModel} 
+                        disableSelectionOnClick
+                        />}
             </span>
         )
     }

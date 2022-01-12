@@ -41,33 +41,21 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.openDevTools();
   mainWindow.once('did-finish-load', () => {
   });
   // Open the DevTools.
 };
 
 
-const createInvisWindow = () => {
-  invisWindow = new BrowserWindow({
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-      
-    }
-  })
-  invisWindow.loadFile(path.join(__dirname, 'preloadRenderer.html'))
-  invisWindow.openDevTools();
-}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   initDB();
-  createInvisWindow();
+  // createInvisWindow();
   createWindow();
-  createDataWorkers();
+  // createDataWorkers();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -90,7 +78,8 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.handle('loadReplays', async () => {
+ipcMain.handle('startDatabaseLoad', async () => {
+  console.log(1);
   createDataWorkers();
 });
 
@@ -120,31 +109,42 @@ async function createDataWorkers() {
   const finalRange = range + ((max + 1) % threadCount);
   let start = 0;
   if (files.length > 0) {
-    mainWindow.webContents.send('startGameLoading', files.length);
-    for (let i = 0; i < threadCount; i++) {
-      const myStart = start;
-      // final worker has to take remainder
-      const myRange = i == threadCount - 1 ? finalRange : range;
-      console.log({
-        myStart,
-        myRange
-      })
+    if (files.length < threadCount) {
       threads.add(new Worker(path.join(__dirname, 'dataWorker.js'), {
         workerData: {
-          start: myStart,
-          range: myRange,
+          start: start,
+          range: max,
           files: files
         }
       }));
-      start += range;
+    } else {
+      for (let i = 0; i < threadCount; i++) {
+        const myStart = start;
+        // final worker has to take remainder
+        const myRange = i == threadCount - 1 ? finalRange : range;
+        console.log({
+          myStart,
+          myRange
+        })
+        threads.add(new Worker(path.join(__dirname, 'dataWorker.js'), {
+          workerData: {
+            start: myStart,
+            range: myRange,
+            files: files
+          }
+        }));
+        start += range;
+      }
     }
+    let gamesLoaded = 0;
     for (let worker of threads) {
       worker.on('exit', () => {
         threads.delete(worker);
         console.log(`Thread exiting, ${threads.size} running...`);
       });
       worker.on('message', (msg) => {
-        mainWindow.webContents.send('gameLoaded');
+        gamesLoaded += 1;
+        mainWindow.webContents.send('gameLoad', { conversionsLoaded: msg, gamesLoaded: gamesLoaded, max: max });
       })
     }
   }
@@ -202,7 +202,7 @@ function initDB() {
     FOREIGN KEY (playlistName) REFERENCES playlists(name),
     FOREIGN KEY (conversionId) REFERENCES conversions(id)
   )`).run();
-  
+
   db.prepare('CREATE INDEX IF NOT EXISTS search_index_2 ON conversions (attackingPlayer, attackingCharacter, defendingPlayer, defendingCharacter, stage, percent, moveCount, didKill)').run();
   db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
   db.prepare('CREATE INDEX IF NOT EXISTS attacking_index ON conversions (attackingPlayer)').run();

@@ -6,6 +6,8 @@ Add option for choosing between OBS recording and dolphin framedumps
 Add option for gfycat uploading  
 Add option for recordings of playlists to be split into different files  
 More search options (search based on moves in conversion, etc)  
+    Combo CONTAINS/STARTS WITH/ENDS WITH move(s)
+    AFTER/BEFORE date
 Game/converion stat breakdown
 analysis of playlists to predict/suggest additions  
 Make the code consisent and look sane

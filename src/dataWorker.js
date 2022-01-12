@@ -10,6 +10,9 @@ const db = require('better-sqlite3')('melee.db');
 const {
     v4: uuidv4
 } = require('uuid');
+const {
+    ipcMain,
+  } = require('electron');
 var currentFile;
 var terminateFlag = false;
 
@@ -30,13 +33,14 @@ if (isMainThread) {
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
 
         for (let i = start; i < end; i++) {
+            let conversionsLoaded = 0;
             try {
                 const game = new SlippiGame(files[i].path);
                 currentFile = files[i].path;
                 const settings = game.getSettings();
                 const metadata = game.getMetadata();
 
-                let conversions = game.getStats().conversions;
+                let conversions = game.getStats().conversions;                
                 let moves = [];
                 for (let j = 0; j < conversions.length; j++) {
                     //-123 is start of game
@@ -77,15 +81,21 @@ if (isMainThread) {
                 });
                 insertManyMoves(moves);
 
-                if (terminateFlag) {console.log('TERMINATE!'); process.exit();}
-                parentPort.postMessage(`${i} of ${end} - start = ${start}`);
+                if (terminateFlag) {console.log('TERMINATE!'); process.exitCode = 1;}
 
+                conversionsLoaded = conversions.length;
             } catch (e) {
                 // console.log(e);
                 // console.log('error :(')
                 console.log(currentFile);
+                console.log(e);
                 // insertGame.run(currentFile);
 
+            }
+            finally {
+                if (!terminateFlag) {
+                parentPort.postMessage(conversionsLoaded);                
+                }
             }
         }
     })();

@@ -19,6 +19,7 @@ class PlaylistForm extends React.Component {
         this.alterPlaylist = this.alterPlaylist.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
         this.handleOrderChange = this.handleOrderChange.bind(this);
+        this.getPlaylistTime = this.getPlaylistTime.bind(this);
     }
 
 
@@ -80,6 +81,16 @@ class PlaylistForm extends React.Component {
         })
     }
 
+    getPlaylistTime() {
+        function fmtMSS(s){return(s-(s%=60))/60+(9<s?':':':0')+s}
+
+        let sum = 0;
+        for (const conversion of this.state.conversions) {
+            sum += conversion.time
+        }
+        let seconds = Math.round(sum / 60);
+        return fmtMSS(seconds)
+    }
     render() {
         return (
             <div>
@@ -115,7 +126,12 @@ class PlaylistForm extends React.Component {
                 </div>
                 {this.state.selectedPlaylist.length > 0
                     &&
-                    <Button id="deletePlaylistButton" onClick={(e) => this.alterPlaylist('delete', e)}>Delete Playlist</Button>
+                    <div>
+                        <Button id="deletePlaylistButton" onClick={(e) => this.alterPlaylist('delete', e)}>Delete Playlist</Button>
+                        <div>
+                            {this.state.conversions.length} conversions - {this.getPlaylistTime()}
+                        </div>
+                    </div>
                 }
                 {this.state.conversions && this.state.conversions.length > 0
                     ? <div>

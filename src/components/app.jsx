@@ -1,16 +1,15 @@
 import * as React from 'react';
 
-
 class App extends React.Component {
     constructor(props) {
         super(props);
         this.handleNavClick = this.handleNavClick.bind(this);
-        this.state = {displayedWidget: undefined}
+        this.state = { displayedWidget: undefined }
     }
 
     handleNavClick(navItem) {
         let widget;
-        switch(navItem) {
+        switch (navItem) {
             case "Search":
                 widget = <SearchForm />
                 break;
@@ -24,16 +23,18 @@ class App extends React.Component {
                 widget = <div>UH OH!</div>
                 break;
         }
-        this.setState({displayedWidget: widget})
+        this.setState({ displayedWidget: widget })
     }
 
     render() {
         return (
             <div>
+
                 <div>
                     <NavigationBar navItems={['Search', 'Playlists', 'Settings']} handleOnClick={this.handleNavClick} />
                 </div>
                 <div className="main">
+                    <DatabaseProgressBar />
                     {this.state.displayedWidget}
                 </div>
             </div>
