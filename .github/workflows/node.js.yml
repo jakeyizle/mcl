@@ -28,4 +28,5 @@ jobs:
         cache: 'npm'
     - run: git config --system core.longpaths true
     - run: npm install
+    - run: npm dedupe
     - run: npm run make
