@@ -1,6 +1,6 @@
 {
-  "name": "melee-combo-loader",
-  "productName": "melee-combo-loader",
+  "name": "mcl",
+  "productName": "mcl",
   "version": "0.0.1",
   "description": "My Electron application description",
   "main": "src/index.js",
