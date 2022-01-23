@@ -29,3 +29,9 @@ jobs:
     - run: git config --system core.longpaths true
     - run: npm install    
     - run: npm run make
+    - name: Create a Release
+      uses: elgohr/Github-Release-Action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      with:
+        args: MyReleaseMessage
