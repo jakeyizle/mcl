@@ -79,7 +79,6 @@ app.on('activate', () => {
 // code. You can also put them in separate files and import them here.
 
 ipcMain.handle('startDatabaseLoad', async () => {
-  console.log(1);
   createDataWorkers();
 });
 
@@ -88,8 +87,8 @@ ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 });
 
-async function createDataWorkers() {
-  if (threads.length > 1) { return; }
+async function createDataWorkers() {  
+  if (threads.size > 1) { return; }
 
   const threadCount = os.cpus().length - 1;
   console.log(`threadcount: ${threadCount}`);
@@ -184,7 +183,8 @@ function initDB() {
       frame,
       hitCount,
       damage,
-      moveIndex
+      moveIndex,
+      inverseMoveIndex
       ,FOREIGN KEY (conversionId) REFERENCES conversions(id)
   )`).run();
   const settingsStmt = db.prepare(`CREATE TABLE IF NOT EXISTS settings (

@@ -114,7 +114,7 @@ class ConversionDataGrid extends React.Component {
                         rows={this.props.data}
                         columns={this.columns}
                         pagination
-                        rowsPerPageOptions={[1, 2, 5, 10]}
+                        rowsPerPageOptions={[10, 20, 50, 100]}
                         onPageSizeChange={(newPageSize) => this.props.handlePageSize(newPageSize)}
                         pageSize={this.props.pageSize}
                         rowCount={this.props.maxCount}

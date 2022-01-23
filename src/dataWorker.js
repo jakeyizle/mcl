@@ -30,7 +30,7 @@ if (isMainThread) {
 
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
         const insertConversion = db.prepare("INSERT INTO conversions (startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
-        const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
+        const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (inverseMoveIndex, conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@inverseMoveIndex, @conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
 
         for (let i = start; i < end; i++) {
             let conversionsLoaded = 0;
@@ -63,8 +63,11 @@ if (isMainThread) {
                     for (let k = 0; k < conversions[j].moves.length; k++) {
                         conversions[j].moves[k].conversionId = conversions[j].id;
                         conversions[j].moves[k].moveIndex = k;
-                    }                    
-                    conversions[j].startAt = metadata.startAt;
+                        //this makes searching at the end of combos possible
+                        conversions[j].moves[k].inverseMoveIndex = conversions[j].moves.length - (k+1)
+                    }
+                    //otherwise all conversions in a game have same startAt date                      
+                    conversions[j].startAt = metadata.startAt+`${conversions[j].startFrame}F`;
                     //copy by value
                     moves = moves.concat(conversions[j].moves);
                 }
