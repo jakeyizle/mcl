@@ -1,54 +1,94 @@
 {
-  "name": "mcl",
-  "productName": "mcl",
-  "version": "0.0.1",
-  "description": "My Electron application description",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
-    "lint": "./node_modules/.bin/eslint"
-  },
-  "keywords": [],
-  "author": {
-    "name": "jakeyizle",
-    "email": "whiterbread@gmail.com"
-  },
-  "license": "MIT",
-  "config": {
-    "forge": "./forge.config.js"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.5.0",
-    "@emotion/styled": "^11.3.0",
-    "@mui/material": "^5.1.0",
-    "@mui/x-data-grid": "^5.0.0-beta.7",
-    "@slippi/slippi-js": "^5.1.1",
-    "better-sqlite3": "^7.4.3",
-    "electron-squirrel-startup": "^1.0.0",
-    "lodash": "^4.17.21",
-    "obs-websocket-js": "^4.0.3",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "uuid": "^8.3.2"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.16.0",
-    "@babel/register": "^7.16.0",
-    "@electron-forge/cli": "^6.0.0-beta.54",
-    "@electron-forge/maker-deb": "^6.0.0-beta.54",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.54",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
-    "@electron-forge/maker-zip": "^6.0.0-beta.54",
-    "@electron-forge/publisher-github": "^6.0.0-beta.63",
-    "electron": "12.0.2",
-    "eslint": "^8.2.0",
-    "eslint-config-airbnb": "^19.0.1",
-    "eslint-plugin-import": "^2.25.3",
-    "eslint-plugin-jsx-a11y": "^6.5.1",
-    "eslint-plugin-react": "^7.27.1",
-    "eslint-plugin-react-hooks": "^4.3.0"
-  }
+    "name": "mcl",
+    "productName": "mcl",
+    "version": "0.0.1",
+    "description": "My Electron application description",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "electron-forge start",
+        "package": "electron-forge package",
+        "make": "electron-forge make",
+        "publish": "electron-forge publish",
+        "lint": "./node_modules/.bin/eslint"
+    },
+    "keywords": [],
+    "author": {
+        "name": "jakeyizle",
+        "email": "whiterbread@gmail.com"
+    },
+    "license": "MIT",
+    "config": {
+        "forge": {
+            "packagerConfig": {
+                "asar": true
+            },
+            "makers": [
+                {
+                    "name": "@electron-forge/maker-squirrel",
+                    "config": {
+                        "name": "mcl"
+                    }
+                },
+                {
+                    "name": "@electron-forge/maker-zip",
+                    "platforms": [
+                        "darwin"
+                    ]
+                },
+                {
+                    "name": "@electron-forge/maker-deb",
+                    "config": {}
+                },
+                {
+                    "name": "@electron-forge/maker-rpm",
+                    "config": {}
+                }
+            ],
+            "publishers": [
+                {
+                    "name": "@electron-forge/publisher-github",
+                    "platforms": [
+                        "win32"
+                    ],
+                    "config": {
+                        "repository": {
+                            "owner": "jakeyizle",
+                            "name": "mcl"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "dependencies": {
+        "@emotion/react": "^11.5.0",
+        "@emotion/styled": "^11.3.0",
+        "@mui/material": "^5.1.0",
+        "@mui/x-data-grid": "^5.0.0-beta.7",
+        "@slippi/slippi-js": "^5.1.1",
+        "better-sqlite3": "^7.4.3",
+        "electron-squirrel-startup": "^1.0.0",
+        "lodash": "^4.17.21",
+        "obs-websocket-js": "^4.0.3",
+        "react": "^17.0.2",
+        "react-dom": "^17.0.2",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.16.0",
+        "@babel/register": "^7.16.0",
+        "@electron-forge/cli": "^6.0.0-beta.54",
+        "@electron-forge/maker-deb": "^6.0.0-beta.54",
+        "@electron-forge/maker-rpm": "^6.0.0-beta.54",
+        "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
+        "@electron-forge/maker-zip": "^6.0.0-beta.54",
+        "@electron-forge/publisher-github": "^6.0.0-beta.63",
+        "electron": "12.0.2",
+        "eslint": "^8.2.0",
+        "eslint-config-airbnb": "^19.0.1",
+        "eslint-plugin-import": "^2.25.3",
+        "eslint-plugin-jsx-a11y": "^6.5.1",
+        "eslint-plugin-react": "^7.27.1",
+        "eslint-plugin-react-hooks": "^4.3.0"
+    }
 }
