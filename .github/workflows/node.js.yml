@@ -27,8 +27,5 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: git config --system core.longpaths true
-    - run: npm install
-    - run: npm dedupe
-    - name: make me daddy
-      run: npm run make
-      working-directory: D:\a\mcl\mcl
+    - run: npm install    
+    - run: npm run make
