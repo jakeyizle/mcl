@@ -54,7 +54,9 @@
                         "repository": {
                             "owner": "jakeyizle",
                             "name": "mcl"
-                        }
+                        },
+                        "draft": false,
+                        "prerelease": false
                     }
                 }
             ]
