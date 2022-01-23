@@ -9,8 +9,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "./node_modules/.bin/eslint",
-    "gitTest": "./.github/test.ps1"
+    "lint": "./node_modules/.bin/eslint"
   },
   "keywords": [],
   "author": {
@@ -20,7 +19,9 @@
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "asar": true
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
@@ -42,6 +43,17 @@
           "name": "@electron-forge/maker-rpm",
           "config": {}
         }
+      ],
+      "publishers": [
+        {
+          "name": "@electron-forge/publisher-github",
+          "config": {
+            "repository": {
+              "owner": "jakeyizle",
+              "name": "mcl"
+            }
+          }
+        }
       ]
     }
   },
@@ -52,22 +64,12 @@
     "@mui/x-data-grid": "^5.0.0-beta.7",
     "@slippi/slippi-js": "^5.1.1",
     "better-sqlite3": "^7.4.3",
-    "child_process": "^1.0.2",
-    "crypto": "^1.0.1",
-    "electron-photon": "^1.1.6",
     "electron-squirrel-startup": "^1.0.0",
-    "exec": "^0.2.1",
     "lodash": "^4.17.21",
-    "msfmultiselect": "^2.4.0",
-    "multiselect-react-dropdown": "^2.0.7",
     "obs-websocket-js": "^4.0.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "uuid": "^8.3.2",
-    "vue": "^2.6.14",
-    "vue-router": "^3.5.2",
-    "vue3-sfc-loader": "^0.8.4",
-    "vuex": "^3.6.2"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
@@ -77,6 +79,7 @@
     "@electron-forge/maker-rpm": "^6.0.0-beta.54",
     "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
     "@electron-forge/maker-zip": "^6.0.0-beta.54",
+    "@electron-forge/publisher-github": "^6.0.0-beta.63",
     "electron": "12.0.2",
     "eslint": "^8.2.0",
     "eslint-config-airbnb": "^19.0.1",
