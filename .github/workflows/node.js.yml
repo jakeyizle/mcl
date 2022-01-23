@@ -29,7 +29,6 @@ jobs:
     - run: git config --system core.longpaths true
     - run: npm install
     - run: npm dedupe
-    - run: ls -l
     - name: make me daddy
       run: npm run make
       working-directory: D:\a\mcl\mcl
