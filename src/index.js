@@ -104,7 +104,7 @@ async function createDataWorkers() {
   const finalRange = range + ((max + 1) % threadCount);
   let start = 0;
   //if prod else dev
-  let workerPath = fs.existsSync((__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js'))
+  let workerPath = fs.existsSync(path.join(__dirname, '..', '..', 'app.asar.unpacked/src'))
     ? path.join(__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js')
     : path.join(__dirname, 'dataWorker.js')
 
