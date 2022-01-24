@@ -10,9 +10,6 @@ const db = require('better-sqlite3')('melee.db');
 const {
     v4: uuidv4
 } = require('uuid');
-const {
-    ipcMain,
-  } = require('electron');
 var currentFile;
 var terminateFlag = false;
 

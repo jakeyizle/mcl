@@ -43,15 +43,25 @@ const createWindow = () => {
   // Open the DevTools.
 };
 
+const createInvisWindow= () => {
+  let invisWindow = new BrowserWindow({
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
+    },
+  });
+
+  invisWindow.loadFile(path.join(__dirname, 'preload.html'))
+}
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   initDB();
-  // createInvisWindow();
   createWindow();
-  // createDataWorkers();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -83,11 +93,78 @@ ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 });
 
+// async function createDataWorkers() {
+//   if (threads.size > 1) { return; }
+
+//   const threadCount = os.cpus().length - 1;
+//   console.log(`threadcount: ${threadCount}`);
+
+//   const settingsStmt = db.prepare('SELECT value from settings where key = ?')
+//   const replayPath = settingsStmt.get('replayPath').value;
+//   const localFiles = await getReplayFiles(replayPath);
+
+//   const dbFiles = db.prepare('SELECT name from games');
+//   const alreadyLoadedFiles = dbFiles.all().map((x) => x.name);
+
+//   const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
+//   console.log(files.length);
+
+//   const max = files.length;
+//   const range = Math.ceil(max / threadCount);
+//   const finalRange = range + ((max + 1) % threadCount);
+//   let start = 0;
+//   //if prod else dev
+//   let workerPath = fs.existsSync(path.join(__dirname, '..', '..', 'app.asar.unpacked/src'))
+//     ? path.join(__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js')
+//     : path.join(__dirname, 'dataWorker.js')
+
+//   if (files.length > 0) {
+//     if (files.length < threadCount) {
+//       threads.add(new Worker(workerPath, {
+//         workerData: {
+//           start: start,
+//           range: max,
+//           files: files
+//         }
+//       }));
+//     } else {
+//       for (let i = 0; i < threadCount; i++) {
+//         const myStart = start;
+//         // final worker has to take remainder
+//         const myRange = i == threadCount - 1 ? finalRange : range;
+//         console.log({
+//           myStart,
+//           myRange
+//         })
+//         threads.add(new Worker(workerPath, {
+//           workerData: {
+//             start: myStart,
+//             range: myRange,
+//             files: files
+//           }
+//         }));
+//         start += range;
+//       }
+//     }
+//     let gamesLoaded = 0;
+//     for (let worker of threads) {
+//       worker.on('exit', () => {
+//         threads.delete(worker);
+//         console.log(`Thread exiting, ${threads.size} running...`);
+//       });
+//       worker.on('message', (msg) => {
+//         gamesLoaded += 1;
+//         mainWindow.webContents.send('gameLoad', { conversionsLoaded: msg, gamesLoaded: gamesLoaded, max: max });
+//       })
+//     }
+//   }
+// }
+
+
 async function createDataWorkers() {
   if (threads.size > 1) { return; }
 
   const threadCount = os.cpus().length - 1;
-  console.log(`threadcount: ${threadCount}`);
 
   const settingsStmt = db.prepare('SELECT value from settings where key = ?')
   const replayPath = settingsStmt.get('replayPath').value;
@@ -97,7 +174,6 @@ async function createDataWorkers() {
   const alreadyLoadedFiles = dbFiles.all().map((x) => x.name);
 
   const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
-  console.log(files.length);
 
   const max = files.length;
   const range = Math.ceil(max / threadCount);
@@ -149,7 +225,6 @@ async function createDataWorkers() {
     }
   }
 }
-
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,
