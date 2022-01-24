@@ -1,7 +1,7 @@
 {
     "name": "mcl",
     "productName": "mcl",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "My Electron application description",
     "main": "src/index.js",
     "scripts": {
@@ -22,7 +22,7 @@
             "packagerConfig": {
                 "asar": {
                     "unpack": "**/dataWorker.js"
-                }             
+                }
             },
             "makers": [
                 {
