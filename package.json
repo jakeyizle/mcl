@@ -9,8 +9,7 @@
         "package": "electron-forge package",
         "make": "electron-forge make",
         "publish": "electron-forge publish",
-        "lint": "./node_modules/.bin/eslint",
-        "version": "npm version patch"
+        "lint": "./node_modules/.bin/eslint"
     },
     "keywords": [],
     "author": {
