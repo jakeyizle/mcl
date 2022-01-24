@@ -109,10 +109,9 @@ if (isMainThread) {
     }
 
 
-
+    parentPort.on('exit' ,() => {
+        console.log('EXIT!');
+        terminateFlag = true;
+    }
+    )
 }
-parentPort.on('exit' ,() => {
-    console.log('EXIT!');
-    terminateFlag = true;
-}
-)

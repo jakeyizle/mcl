@@ -7,12 +7,10 @@ const {
 const {
   Worker,
 } = require('worker_threads');
-
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const db = require('better-sqlite3')('melee.db');
-require ('hazardous');
 db.pragma('journal_mode = WAL');
 // db.pragma('analysis_limit=400');
 db.pragma('optimize');
@@ -85,7 +83,7 @@ ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 });
 
-async function createDataWorkers() {  
+async function createDataWorkers() {
   if (threads.size > 1) { return; }
 
   const threadCount = os.cpus().length - 1;
@@ -105,9 +103,14 @@ async function createDataWorkers() {
   const range = Math.ceil(max / threadCount);
   const finalRange = range + ((max + 1) % threadCount);
   let start = 0;
+  //if prod else dev
+  let workerPath = fs.existsSync((__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js'))
+    ? path.join(__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js')
+    : path.join(__dirname, 'dataWorker.js')
+
   if (files.length > 0) {
     if (files.length < threadCount) {
-      threads.add(new Worker(path.join(__dirname, 'dataWorker.js'), {
+      threads.add(new Worker(workerPath, {
         workerData: {
           start: start,
           range: max,
@@ -123,7 +126,7 @@ async function createDataWorkers() {
           myStart,
           myRange
         })
-        threads.add(new Worker(path.join(__dirname, 'dataWorker.js'), {
+        threads.add(new Worker(workerPath, {
           workerData: {
             start: myStart,
             range: myRange,
