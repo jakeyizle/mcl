@@ -23,7 +23,6 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
 
 const threads = new Set();
 let mainWindow;
-let invisWindow;
 
 app.on('before-quit', () => {
   threads.forEach((worker) => worker.postMessage('exit'));
@@ -41,7 +40,6 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  mainWindow.openDevTools();
   mainWindow.once('did-finish-load', () => {
   });
   // Open the DevTools.
