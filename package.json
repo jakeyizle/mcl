@@ -10,7 +10,7 @@
         "make": "electron-forge make",
         "publish": "electron-forge publish",
         "lint": "./node_modules/.bin/eslint",
-        "version": "npm version"
+        "version": "npm version patch"
     },
     "keywords": [],
     "author": {

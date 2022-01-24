@@ -4,7 +4,7 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.handleNavClick = this.handleNavClick.bind(this);
-        this.state = { displayedWidget: undefined }
+        this.state = { displayedWidget: <HomeForm /> }
     }
 
     handleNavClick(navItem) {
@@ -19,8 +19,9 @@ class App extends React.Component {
             case "Settings":
                 widget = <SettingsForm />
                 break;
+            case "Home":
             default:
-                widget = <div>UH OH!</div>
+                widget = <HomeForm />
                 break;
         }
         this.setState({ displayedWidget: widget })
@@ -31,10 +32,9 @@ class App extends React.Component {
             <div>
 
                 <div>
-                    <NavigationBar navItems={['Search', 'Playlists', 'Settings']} handleOnClick={this.handleNavClick} />
+                    <NavigationBar navItems={['Home', 'Search', 'Playlists', 'Settings']} handleOnClick={this.handleNavClick} />
                 </div>
                 <div className="main">
-                    <DatabaseProgressBar />
                     {this.state.displayedWidget}
                 </div>
             </div>

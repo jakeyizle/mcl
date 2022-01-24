@@ -34,7 +34,7 @@ class DatabaseProgressBar extends React.Component {
     let value = (this.state.current / this.state.max) * 100;
 
     return value >= 100
-      ? null
+      ? <div>All {this.state.max} games loaded!</div>
       : (
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Box sx={{ width: '100%', mr: 1 }}>
