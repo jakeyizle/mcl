@@ -3,6 +3,7 @@ const {
   app,
   BrowserWindow,
   ipcMain,
+  ipcRenderer,
 } = require('electron');
 const {
   Worker,
@@ -40,19 +41,21 @@ const createWindow = () => {
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
   mainWindow.once('did-finish-load', () => {
   });
+  mainWindow.on('closed', () => app.quit());
+
   // Open the DevTools.
 };
 
-const createInvisWindow= () => {
+const createInvisWindow = () => {
   let invisWindow = new BrowserWindow({
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
       enableRemoteModule: true,
     },
   });
-
-  invisWindow.loadFile(path.join(__dirname, 'preload.html'))
+  invisWindow.loadFile(path.join(__dirname, 'invisRenderer.html'))
 }
 
 
@@ -67,11 +70,6 @@ app.on('ready', () => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
 
 app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
@@ -92,79 +90,12 @@ ipcMain.handle('startDatabaseLoad', async () => {
 ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 });
-
-// async function createDataWorkers() {
-//   if (threads.size > 1) { return; }
-
-//   const threadCount = os.cpus().length - 1;
-//   console.log(`threadcount: ${threadCount}`);
-
-//   const settingsStmt = db.prepare('SELECT value from settings where key = ?')
-//   const replayPath = settingsStmt.get('replayPath').value;
-//   const localFiles = await getReplayFiles(replayPath);
-
-//   const dbFiles = db.prepare('SELECT name from games');
-//   const alreadyLoadedFiles = dbFiles.all().map((x) => x.name);
-
-//   const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
-//   console.log(files.length);
-
-//   const max = files.length;
-//   const range = Math.ceil(max / threadCount);
-//   const finalRange = range + ((max + 1) % threadCount);
-//   let start = 0;
-//   //if prod else dev
-//   let workerPath = fs.existsSync(path.join(__dirname, '..', '..', 'app.asar.unpacked/src'))
-//     ? path.join(__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js')
-//     : path.join(__dirname, 'dataWorker.js')
-
-//   if (files.length > 0) {
-//     if (files.length < threadCount) {
-//       threads.add(new Worker(workerPath, {
-//         workerData: {
-//           start: start,
-//           range: max,
-//           files: files
-//         }
-//       }));
-//     } else {
-//       for (let i = 0; i < threadCount; i++) {
-//         const myStart = start;
-//         // final worker has to take remainder
-//         const myRange = i == threadCount - 1 ? finalRange : range;
-//         console.log({
-//           myStart,
-//           myRange
-//         })
-//         threads.add(new Worker(workerPath, {
-//           workerData: {
-//             start: myStart,
-//             range: myRange,
-//             files: files
-//           }
-//         }));
-//         start += range;
-//       }
-//     }
-//     let gamesLoaded = 0;
-//     for (let worker of threads) {
-//       worker.on('exit', () => {
-//         threads.delete(worker);
-//         console.log(`Thread exiting, ${threads.size} running...`);
-//       });
-//       worker.on('message', (msg) => {
-//         gamesLoaded += 1;
-//         mainWindow.webContents.send('gameLoad', { conversionsLoaded: msg, gamesLoaded: gamesLoaded, max: max });
-//       })
-//     }
-//   }
-// }
-
-
+//gross
+//used to be dataWorkers but packing the app into asar didnt play well
+//so invisible-electron-windows is the only way i know to do multithreaded
 async function createDataWorkers() {
-  if (threads.size > 1) { return; }
-
-  const threadCount = os.cpus().length - 1;
+  if (BrowserWindow.getAllWindows().length > 1) { return };
+  let windowCount = os.cpus().length - 1 || 1;
 
   const settingsStmt = db.prepare('SELECT value from settings where key = ?')
   const replayPath = settingsStmt.get('replayPath').value;
@@ -176,52 +107,36 @@ async function createDataWorkers() {
   const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
 
   const max = files.length;
-  const range = Math.ceil(max / threadCount);
-  const finalRange = range + ((max + 1) % threadCount);
-  let start = 0;
-  //if prod else dev
-  let workerPath = fs.existsSync(path.join(__dirname, '..', '..', 'app.asar.unpacked/src'))
-    ? path.join(__dirname, '..', '..', 'app.asar.unpacked/src/dataWorker.js')
-    : path.join(__dirname, 'dataWorker.js')
-
+  if (files.length < windowCount) {
+    windowCount = 1;
+  }
+  const range = Math.ceil(max / windowCount);
+  const finalRange = range + ((max + 1) % windowCount);
+  let fileIndexStart = 0;
+  let windowsLoaded = 0;
   if (files.length > 0) {
-    if (files.length < threadCount) {
-      threads.add(new Worker(workerPath, {
-        workerData: {
-          start: start,
-          range: max,
-          files: files
-        }
-      }));
-    } else {
-      for (let i = 0; i < threadCount; i++) {
-        const myStart = start;
-        // final worker has to take remainder
-        const myRange = i == threadCount - 1 ? finalRange : range;
-        console.log({
-          myStart,
-          myRange
-        })
-        threads.add(new Worker(workerPath, {
-          workerData: {
-            start: myStart,
-            range: myRange,
-            files: files
-          }
-        }));
-        start += range;
-      }
-    }
     let gamesLoaded = 0;
-    for (let worker of threads) {
-      worker.on('exit', () => {
-        threads.delete(worker);
-        console.log(`Thread exiting, ${threads.size} running...`);
-      });
-      worker.on('message', (msg) => {
-        gamesLoaded += 1;
-        mainWindow.webContents.send('gameLoad', { conversionsLoaded: msg, gamesLoaded: gamesLoaded, max: max });
-      })
+    ipcMain.removeAllListeners('loaded');
+    ipcMain.handle('loaded', (event, args) => {
+      windowsLoaded++;
+      let myStart = fileIndexStart;
+      let myRange = windowsLoaded === windowCount ? finalRange : range;
+      fileIndexStart += range;
+      return { start: myStart, range: myRange, files: files }
+    })
+
+    ipcMain.removeAllListeners('gameLoad');
+    ipcMain.handle('gameLoad', (event, args) => {
+      gamesLoaded++
+      mainWindow.webContents.send('gameLoad', { conversionsLoaded: args, gamesLoaded: gamesLoaded, max: max });
+    })
+
+    ipcMain.removeAllListeners('finish');
+    ipcMain.handle('finish', (event, args) => {
+      BrowserWindow.fromId(event.processId).close();
+    })
+    for (let i = 0; i < windowCount; i++) {
+      createInvisWindow();
     }
   }
 }

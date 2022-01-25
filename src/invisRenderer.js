@@ -5,11 +5,9 @@ const db = require('better-sqlite3')('melee.db');
 const {
     v4: uuidv4
 } = require('uuid');
-const ipcRenderer = require('ipcRenderer')
+const {ipcRenderer} = require('electron')
 
 ipcRenderer.invoke('loaded').then((result) => {
-    console.log(result);
-    return
     (async () => {
         let {
             start,
@@ -23,6 +21,7 @@ ipcRenderer.invoke('loaded').then((result) => {
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (inverseMoveIndex, conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@inverseMoveIndex, @conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
     
         for (let i = start; i < end; i++) {
+            console.log(i);
             try {
                 const game = new SlippiGame(files[i].path);
                 currentFile = files[i].path;
@@ -73,11 +72,13 @@ ipcRenderer.invoke('loaded').then((result) => {
                 });
                 insertManyMoves(moves);
                 conversionsLoaded = conversions.length;
+                ipcRenderer.invoke('gameLoad', conversionsLoaded);
             } catch (e) {   
                 console.log(currentFile);
                 console.log(e);
             }
         }
+        ipcRenderer.invoke('finish', conversionsLoaded);
     })();
    
 })

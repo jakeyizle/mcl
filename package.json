@@ -20,9 +20,7 @@
     "config": {
         "forge": {
             "packagerConfig": {
-                "asar": {
-                    "unpack": "**/dataWorker.js"
-                }
+                "asar": true
             },
             "makers": [
                 {
