@@ -4,7 +4,7 @@ const {
     exec,
     spawn
 } = require('child_process');
-const {_} = require('lodash')
+const { _ } = require('lodash')
 // const crypto = require('crypto');
 const OBSWebsocket = require('obs-websocket-js');
 
@@ -23,6 +23,7 @@ exports.playConversions = function playConversions(conversions, recordGame) {
     };
     for (let conversion of conversions) {
         let startFrame = conversion.startFrame - preRoll;
+        //javascript is fun (:
         let endFrame = conversion.endFrame + parseInt(postRoll);
         console.log(startFrame, endFrame);
         var queueMessage = {
@@ -32,7 +33,9 @@ exports.playConversions = function playConversions(conversions, recordGame) {
         };
         output.queue.push(queueMessage);
     }
-    let jsonPath = path.join(__dirname, "tempMoments.json");
+    let jsonPath = __dirname.includes('app.asar')
+        ? path.join(__dirname, '..', '..', 'tempMoments.json')
+        : path.join(__dirname, "tempMoments.json");
     //if i use the json directly it doesnt work, so have to write it to a file first
     fs.writeFileSync(jsonPath, JSON.stringify(output));
     //pretty sure only the -i and -e are needed?
