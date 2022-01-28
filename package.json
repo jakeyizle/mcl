@@ -1,7 +1,7 @@
 {
     "name": "mcl",
     "productName": "mcl",
-    "version": "0.0.15",
+    "version": "0.0.16",
     "description": "My Electron application description",
     "main": "src/index.js",
     "scripts": {
