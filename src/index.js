@@ -3,14 +3,12 @@ const {
   app,
   BrowserWindow,
   ipcMain,
-  ipcRenderer,
 } = require('electron');
-const {
-  Worker,
-} = require('worker_threads');
+
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { GridColumnHeadersItemCollection } = require('@mui/x-data-grid');
 const db = require('better-sqlite3')('melee.db');
 db.pragma('journal_mode = WAL');
 // db.pragma('analysis_limit=400');
@@ -20,16 +18,12 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
   app.quit();
 }
 
-const threads = new Set();
 let mainWindow;
-
-app.on('before-quit', () => {
-  threads.forEach((worker) => worker.postMessage('exit'));
-});
 
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -39,16 +33,14 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  mainWindow.once('did-finish-load', () => {
+  mainWindow.webContents.once('did-finish-load', () => {
+    mainWindow.show();
   });
   mainWindow.on('closed', () => app.quit());
-
-  // Open the DevTools.
 };
 
 const createInvisWindow = () => {
   let invisWindow = new BrowserWindow({
-    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -57,7 +49,6 @@ const createInvisWindow = () => {
   });
   invisWindow.loadFile(path.join(__dirname, 'invisRenderer.html'))
 }
-
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -94,6 +85,7 @@ ipcMain.handle('reply', async (event, message) => {
 //used to be dataWorkers but packing the app into asar didnt play well
 //so invisible-electron-windows is the only way i know to do multithreaded
 async function createDataWorkers() {
+  console.log(BrowserWindow.getAllWindows().length);
   if (BrowserWindow.getAllWindows().length > 1) { return };
   let windowCount = os.cpus().length - 1 || 1;
 
@@ -116,8 +108,12 @@ async function createDataWorkers() {
   let windowsLoaded = 0;
   if (files.length > 0) {
     let gamesLoaded = 0;
-    ipcMain.removeAllListeners('loaded');
+    ipcMain.removeHandler('loaded');
     ipcMain.handle('loaded', (event, args) => {
+      //something went wrong
+      if (windowsLoaded > windowCount) {return}
+
+      console.log('Loaded!');
       windowsLoaded++;
       let myStart = fileIndexStart;
       let myRange = windowsLoaded === windowCount ? finalRange : range;
@@ -125,15 +121,19 @@ async function createDataWorkers() {
       return { start: myStart, range: myRange, files: files }
     })
 
-    ipcMain.removeAllListeners('gameLoad');
+    ipcMain.removeHandler('gameLoad');
     ipcMain.handle('gameLoad', (event, args) => {
       gamesLoaded++
-      mainWindow.webContents.send('gameLoad', { conversionsLoaded: args, gamesLoaded: gamesLoaded, max: max });
+      mainWindow.webContents.send('gameLoad', { conversionsLoaded: args, gamesLoaded: gamesLoaded, max: max, windowsLoaded: windowsLoaded });
     })
 
-    ipcMain.removeAllListeners('finish');
-    ipcMain.handle('finish', (event, args) => {
-      BrowserWindow.fromId(event.processId).close();
+    ipcMain.removeHandler('finish');
+    ipcMain.on('finish', (event, args) => {
+      console.log('windows');      
+      let win = BrowserWindow.getAllWindows().find(x=>x.webContents.id == event.sender.id);      
+      win?.close()
+      windowsLoaded--;
+      mainWindow.webContents.send('windowCountChange', windowsLoaded)
     })
     for (let i = 0; i < windowCount; i++) {
       createInvisWindow();
@@ -165,6 +165,7 @@ function initDB() {
       ,filepath
       ,moveCount
       ,startAt
+      ,zeroToDeath
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`).run();
   const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (

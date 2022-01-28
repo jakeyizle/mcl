@@ -17,7 +17,7 @@ ipcRenderer.invoke('loaded').then((result) => {
         let end = start + range;
     
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
-        const insertConversion = db.prepare("INSERT INTO conversions (startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
+        const insertConversion = db.prepare("INSERT INTO conversions (zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (inverseMoveIndex, conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@inverseMoveIndex, @conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
     
         for (let i = start; i < end; i++) {
@@ -56,6 +56,7 @@ ipcRenderer.invoke('loaded').then((result) => {
                     }
                     //otherwise all conversions in a game have same startAt date                      
                     conversions[j].startAt = metadata.startAt + `${conversions[j].startFrame}F`;
+                    conversions[j].zeroToDeath = conversions[j].startPercent === 0 && conversions[j].didKill == 1 ? 1 : 0;
                     //copy by value
                     moves = moves.concat(conversions[j].moves);
                 }
@@ -78,8 +79,9 @@ ipcRenderer.invoke('loaded').then((result) => {
                 console.log(e);
             }
         }
-        ipcRenderer.invoke('finish', conversionsLoaded);
-    })();
+    })().finally(() => {
+        ipcRenderer.send('finish');
+    });
    
 })
 

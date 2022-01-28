@@ -17,6 +17,7 @@ class SearchForm extends React.Component {
       defendingCharacter: '',
       stage: '',
       didKill: false,
+      zeroToDeath: false,
       excludeAssigned: false,
       minimumDamage: '',
       maximumDamage: '',
@@ -69,8 +70,7 @@ class SearchForm extends React.Component {
       })
     }
     // this.attackingPlayers = db.prepare('SELECT DISTINCT	attackingPlayer FROM conversions').all().map(x => x.attackingPlayer).filter(x => x);
-    this.defendingPlayers = db.prepare('SELECT DISTINCT	defendingPlayer FROM conversions').all().map(x => x.defendingPlayer).filter(x => x);
-    this.defendingPlayers = [];
+    // this.defendingPlayers = db.prepare('SELECT DISTINCT	defendingPlayer FROM conversions').all().map(x => x.defendingPlayer).filter(x => x);
 
   }
 
@@ -146,6 +146,9 @@ class SearchForm extends React.Component {
     if (this.state.excludeAssigned) {
       whereString += ' AND id NOT IN (SELECT conversionId from playlistconversion)'
     }
+    if (this.state.zeroToDeath) {
+      whereString += ' AND zeroToDeath = 1'
+    }
     //need a sql wizard
     if (this.state.comboContains.length > 0) {
 
@@ -201,18 +204,18 @@ class SearchForm extends React.Component {
     let dbPlayerListState = `db${dropdown}List`
     let openState = `db${dropdown}Open`
 
-    // if (this.state[dbPlayerListState].length === 0) {
+    if (this.state[dbPlayerListState].length === 0) {
     this.setState({ [openState]: true }, () => {
       //necessary for loading icon to show
       (async () => {
         await sleep(1e1);
-        let players = db.prepare(`SELECT DISTINCT ${dropdown} FROM conversions`).pluck().all().filter(x => x);
+        let players = db.prepare(`SELECT DISTINCT ${dropdown} FROM conversions`).pluck().all().filter(x => x).sort();
         this.setState({ [dbPlayerListState]: players })
       })();
     })
-    // } else {
-    //   this.setState({ [openState]: true});
-    // }
+    } else {
+      this.setState({ [openState]: true});
+    }
   }
   render() {
     let attackPlayerLoading = (this.state.dbAttackingPlayerList.length === 0 && this.state.dbAttackingPlayerOpen)
@@ -322,6 +325,8 @@ class SearchForm extends React.Component {
               />
               <div>
                 <FormControlLabel control={<Checkbox />} label="Did Combo Kill?" onChange={this.handleInputChange} name="didKill" checked={this.state.didKill} />
+                <FormControlLabel control={<Checkbox />} label="Zero to Death?" onChange={this.handleInputChange} name="zeroToDeath" checked={this.state.zeroToDeath} />
+
               </div>
               <div>
                 <TextField label="Minimum damage done" type="number" placeholder="Minimum %" onChange={this.handleInputChange} name="minimumDamage" value={this.state.minimumDamage} />

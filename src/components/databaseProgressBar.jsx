@@ -1,4 +1,5 @@
 import { Box, LinearProgress, Typography } from '@mui/material';
+import { allGridColumnsSelector } from '@mui/x-data-grid';
 import { ipcRenderer } from 'electron/renderer'
 
 const gameCountStmt = db.prepare('SELECT COUNT (*) FROM games').pluck();
@@ -12,6 +13,7 @@ class DatabaseProgressBar extends React.Component {
       conversionCount: conversionCountStmt.get(),
       current: undefined,
       max: undefined,
+      windowCount: undefined
     }
 
     ipcRenderer.on('gameLoad', (event, args) => {
@@ -20,8 +22,15 @@ class DatabaseProgressBar extends React.Component {
           gameCount: this.state.gameCount + 1,
           conversionCount: this.state.conversionCount + args.conversionsLoaded,
           current: args.gamesLoaded,
-          max: args.max
+          max: args.max,
+          windowCount: args.windowsLoaded
         })
+    })
+
+    ipcRenderer.on('windowCountChange', (event, args) => {
+      this.setState({
+        windowCount: args
+      })
     })
   }
 
@@ -29,6 +38,8 @@ class DatabaseProgressBar extends React.Component {
     ipcRenderer.invoke('startDatabaseLoad');
   }
 
+  componentWillUnmount() {
+  }
 
   linearProgressWithLabel() {
     let value = (this.state.current / this.state.max) * 100;
@@ -49,10 +60,13 @@ class DatabaseProgressBar extends React.Component {
 
   render() {
     return (
-      <Box sx={{ width: '100%' }}>
-        {this.state.gameCount} games and {this.state.conversionCount} conversions loaded
-        {this.state.current && this.state.max && this.linearProgressWithLabel()}
-      </Box>
+      <div>
+        <Box sx={{ width: '100%' }}>
+          {this.state.gameCount} games and {this.state.conversionCount} conversions loaded
+          {this.state.current && this.state.max && this.linearProgressWithLabel()}
+        </Box>
+        {this.state.windowCount > 0 && <div>{this.state.windowCount} workers loading games</div>}
+      </div>
     );
   }
 }
