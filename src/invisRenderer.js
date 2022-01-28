@@ -80,7 +80,7 @@ ipcRenderer.invoke('loaded').then((result) => {
             }
         }
     })().finally(() => {
-        ipcRenderer.send('finish');
+        ipcRenderer.invoke('finish');
     });
    
 })

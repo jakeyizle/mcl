@@ -34,6 +34,7 @@ const createWindow = () => {
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
   mainWindow.webContents.once('did-finish-load', () => {
+    mainWindow.maximize();
     mainWindow.show();
   });
   mainWindow.on('closed', () => app.quit());
@@ -41,6 +42,7 @@ const createWindow = () => {
 
 const createInvisWindow = () => {
   let invisWindow = new BrowserWindow({
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -128,9 +130,10 @@ async function createDataWorkers() {
     })
 
     ipcMain.removeHandler('finish');
-    ipcMain.on('finish', (event, args) => {
+    ipcMain.handle('finish', (event, args) => {
       console.log('windows');      
-      let win = BrowserWindow.getAllWindows().find(x=>x.webContents.id == event.sender.id);      
+      let win = BrowserWindow.getAllWindows().find(x=>x.webContents.id == event.sender.id);
+      //sometimes this throws an error but the window closes anyways...      
       win?.close()
       windowsLoaded--;
       mainWindow.webContents.send('windowCountChange', windowsLoaded)
