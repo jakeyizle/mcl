@@ -83,6 +83,10 @@ ipcMain.handle('startDatabaseLoad', async () => {
 ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 });
+ipcMain.handle('error', async (event, message) => {
+  console.error('ERROR from renderer')
+  console.error(message);
+});
 //gross
 //used to be dataWorkers but packing the app into asar didnt play well
 //so invisible-electron-windows is the only way i know to do multithreaded
@@ -169,6 +173,7 @@ function initDB() {
       ,moveCount
       ,startAt
       ,zeroToDeath
+      ,moveString
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`).run();
   const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (

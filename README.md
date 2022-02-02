@@ -15,7 +15,6 @@ TODO (no particular order):
 - Add option for gfycat uploading    
 - Add option for recordings of playlists to be split into different files    
 - More search options (search based on moves in conversion, etc)    
-    * Combo CONTAINS move(s)  
     * AFTER/BEFORE date  
 - Better table display (configurable columns?)
     * after page 2 stuff starts to get cut off
@@ -30,6 +29,8 @@ TODO (no particular order):
 - Add loading icon to long operations
 
 ISSUES:
+- Need database migration system, currently have to delete DB everytime
+    * Electron update!
 - Load up is very slow  
 - First search call is slow
     * Must be an indexing thing - only happens on very first call

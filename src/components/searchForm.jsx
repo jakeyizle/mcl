@@ -65,7 +65,7 @@ class SearchForm extends React.Component {
     this.moves = [];
     for (const moveId in moves) {
       this.moves.push({
-        value: parseInt(moveId)+1,
+        value: parseInt(moveId) + 1,
         label: moves[moveId].name
       })
     }
@@ -149,9 +149,11 @@ class SearchForm extends React.Component {
     if (this.state.zeroToDeath) {
       whereString += ' AND zeroToDeath = 1'
     }
-    //need a sql wizard
     if (this.state.comboContains.length > 0) {
-
+      //no judgement zone
+      let value = '%,' + this.state.comboContains.map(x => x.value).join(',') + ',%';
+      whereString += ' AND moveString LIKE @moveString'
+      queryObject.moveString = value;
     }
     if (this.state.comboStartsWith.length > 0) {
       let values = this.state.comboStartsWith.map(x => parseInt(x.value))
@@ -205,16 +207,16 @@ class SearchForm extends React.Component {
     let openState = `db${dropdown}Open`
 
     if (this.state[dbPlayerListState].length === 0) {
-    this.setState({ [openState]: true }, () => {
-      //necessary for loading icon to show
-      (async () => {
-        await sleep(1e1);
-        let players = db.prepare(`SELECT DISTINCT ${dropdown} FROM conversions`).pluck().all().filter(x => x).sort();
-        this.setState({ [dbPlayerListState]: players })
-      })();
-    })
+      this.setState({ [openState]: true }, () => {
+        //necessary for loading icon to show
+        (async () => {
+          await sleep(1e1);
+          let players = db.prepare(`SELECT DISTINCT ${dropdown} FROM conversions`).pluck().all().filter(x => x).sort();
+          this.setState({ [dbPlayerListState]: players })
+        })();
+      })
     } else {
-      this.setState({ [openState]: true});
+      this.setState({ [openState]: true });
     }
   }
   render() {
@@ -339,9 +341,11 @@ class SearchForm extends React.Component {
               <div>
                 <FormControlLabel control={<Checkbox />} label="Exclude assigned conversions?" onChange={this.handleInputChange} name="excludeAssigned" checked={this.state.excludeAssigned} />
               </div>
-
+              {/* these will throw warnings but its okay
+                  forcing isOptionEqualToValue = false 
+                  lets users select the same option multiple times */}
               <Grid container >
-                {/* <Grid item>
+                <Grid item>
                   <Autocomplete
                     multiple
                     options={this.moves}
@@ -349,8 +353,9 @@ class SearchForm extends React.Component {
                     renderInput={(params) => (<TextField {...params} label="Combo contains string" variant="standard" />)}
                     onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboContains')}
                     isOptionEqualToValue={(option, value) => false}
+                    disableCloseOnSelect={true}
                   />
-                </Grid> */}
+                </Grid>
                 <Grid item>
                   <Autocomplete
                     multiple
@@ -359,6 +364,7 @@ class SearchForm extends React.Component {
                     renderInput={(params) => (<TextField {...params} label="Combo starts with string" variant="standard" />)}
                     onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboStartsWith')}
                     isOptionEqualToValue={(option, value) => false}
+                    disableCloseOnSelect={true}
                   />
                 </Grid>
                 <Grid item>
@@ -369,6 +375,7 @@ class SearchForm extends React.Component {
                     renderInput={(params) => (<TextField {...params} label="Combo ends with string" variant="standard" />)}
                     onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboEndsWith')}
                     isOptionEqualToValue={(option, value) => false}
+                    disableCloseOnSelect={true}
                   />
                 </Grid>
               </Grid >

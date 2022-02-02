@@ -17,11 +17,10 @@ ipcRenderer.invoke('loaded').then((result) => {
         let end = start + range;
     
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
-        const insertConversion = db.prepare("INSERT INTO conversions (zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
+        const insertConversion = db.prepare("INSERT INTO conversions (moveString, zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@moveString, @zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (inverseMoveIndex, conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@inverseMoveIndex, @conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
     
         for (let i = start; i < end; i++) {
-            console.log(i);
             try {
                 const game = new SlippiGame(files[i].path);
                 currentFile = files[i].path;
@@ -57,6 +56,9 @@ ipcRenderer.invoke('loaded').then((result) => {
                     //otherwise all conversions in a game have same startAt date                      
                     conversions[j].startAt = metadata.startAt + `${conversions[j].startFrame}F`;
                     conversions[j].zeroToDeath = conversions[j].startPercent === 0 && conversions[j].didKill == 1 ? 1 : 0;
+                    //changing string from 10,12,13 to ,10,12,13, prevents weird search issues
+                    //LIKE %0,1% will return the above. By adding commas we can do LIKE %,0,1,%
+                    conversions[j].moveString = ','+conversions[j].moves.map(move => move.moveId).join(',')+',';
                     //copy by value
                     moves = moves.concat(conversions[j].moves);
                 }
@@ -77,6 +79,7 @@ ipcRenderer.invoke('loaded').then((result) => {
             } catch (e) {   
                 console.log(currentFile);
                 console.log(e);
+                ipcRenderer.invoke('error', e)
             }
         }
     })().finally(() => {

@@ -15,7 +15,6 @@ class DatabaseProgressBar extends React.Component {
       max: undefined,
       windowCount: undefined
     }
-    ipcRenderer.removeAllListeners('gameLoad');
     ipcRenderer.on('gameLoad', (event, args) => {
       this.setState(
         {
@@ -26,7 +25,7 @@ class DatabaseProgressBar extends React.Component {
           windowCount: args.windowsLoaded
         })
     })
-    ipcRenderer.removeAllListeners('windowCountChange');
+    
     ipcRenderer.on('windowCountChange', (event, args) => {
       this.setState({
         windowCount: args
@@ -36,9 +35,12 @@ class DatabaseProgressBar extends React.Component {
 
   componentDidMount() {
     ipcRenderer.invoke('startDatabaseLoad');
+
   }
 
   componentWillUnmount() {
+    ipcRenderer.removeAllListeners('gameLoad');
+    ipcRenderer.removeAllListeners('windowCountChange');
   }
 
   linearProgressWithLabel() {
