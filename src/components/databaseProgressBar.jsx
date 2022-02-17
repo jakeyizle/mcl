@@ -15,6 +15,9 @@ class DatabaseProgressBar extends React.Component {
       max: undefined,
       windowCount: undefined
     }
+    //TODO i think i need to rebuild this partially
+    //on load this should ping the main process and get info about the current game-load process
+    //and then update as new events are sent
     ipcRenderer.on('gameLoad', (event, args) => {
       this.setState(
         {
@@ -35,7 +38,6 @@ class DatabaseProgressBar extends React.Component {
 
   componentDidMount() {
     ipcRenderer.invoke('startDatabaseLoad');
-
   }
 
   componentWillUnmount() {

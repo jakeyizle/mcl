@@ -90,6 +90,9 @@ ipcMain.handle('error', async (event, message) => {
 //gross
 //used to be dataWorkers but packing the app into asar didnt play well
 //so invisible-electron-windows is the only way i know to do multithreaded
+
+//rewrite this and make the state more robust
+// dataLoad states: none, inprogress, completed
 async function createDataWorkers() {
   console.log(BrowserWindow.getAllWindows().length);
   if (BrowserWindow.getAllWindows().length > 1) { return };
@@ -147,6 +150,7 @@ async function createDataWorkers() {
     }
   }
 }
+
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,

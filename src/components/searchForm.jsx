@@ -69,9 +69,6 @@ class SearchForm extends React.Component {
         label: moves[moveId].name
       })
     }
-    // this.attackingPlayers = db.prepare('SELECT DISTINCT	attackingPlayer FROM conversions').all().map(x => x.attackingPlayer).filter(x => x);
-    // this.defendingPlayers = db.prepare('SELECT DISTINCT	defendingPlayer FROM conversions').all().map(x => x.defendingPlayer).filter(x => x);
-
   }
 
   handleInputChange(event) {
@@ -106,7 +103,7 @@ class SearchForm extends React.Component {
       whereString += ' AND attackingPlayer = @attackingPlayerCode'
       queryObject.attackingPlayerCode = this.state.attackingPlayerCode;
     };
-    if (this.state.attackingCharacter != '' || this.state.attackingCharacter === 0) {
+    if ((this.state.attackingCharacter != '' || this.state.attackingCharacter === 0) && parseInt(this.state.attackingCharacter)) {
       whereString += ' AND attackingCharacter = @attackingCharacter'
       //parseint needed for sqlite comparison
       queryObject.attackingCharacter = parseInt(this.state.attackingCharacter);
@@ -115,7 +112,7 @@ class SearchForm extends React.Component {
       whereString += ' AND defendingPlayer = @defendingPlayerCode'
       queryObject.defendingPlayerCode = this.state.defendingPlayerCode;
     };
-    if (this.state.defendingCharacter != '' || this.state.defendingCharacter === 0) {
+    if ((this.state.defendingCharacter != '' || this.state.defendingCharacter === 0) && parseInt(this.state.defendingCharacter)) {
       whereString += ' AND defendingCharacter = @defendingCharacter'
       queryObject.defendingCharacter = parseInt(this.state.defendingCharacter);
     };
@@ -184,7 +181,7 @@ class SearchForm extends React.Component {
   }
 
   setPage(pageNumber, event) {
-    if (event) { event.preventDefault() };
+    event?.preventDefault()
     this.setState({ pageNumber: pageNumber },
       () => this.getConversions())
   }
@@ -206,18 +203,17 @@ class SearchForm extends React.Component {
     let dbPlayerListState = `db${dropdown}List`
     let openState = `db${dropdown}Open`
 
-    if (this.state[dbPlayerListState].length === 0) {
-      this.setState({ [openState]: true }, () => {
+    this.setState({ [openState]: true }, () => {
+      if (this.state[dbPlayerListState].length === 0) {
         //necessary for loading icon to show
         (async () => {
           await sleep(1e1);
-          let players = db.prepare(`SELECT DISTINCT ${dropdown} FROM conversions`).pluck().all().filter(x => x).sort();
+          let players = db.prepare(`SELECT ${dropdown} FROM conversions GROUP BY ${dropdown} ORDER BY COUNT(*) DESC`).pluck().all().filter(x => x);
           this.setState({ [dbPlayerListState]: players })
         })();
-      })
-    } else {
-      this.setState({ [openState]: true });
-    }
+      }
+    })
+
   }
   render() {
     let attackPlayerLoading = (this.state.dbAttackingPlayerList.length === 0 && this.state.dbAttackingPlayerOpen)
@@ -354,6 +350,7 @@ class SearchForm extends React.Component {
                     onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboContains')}
                     isOptionEqualToValue={(option, value) => false}
                     disableCloseOnSelect={true}
+                    defaultValue={this.state.comboContains}
                   />
                 </Grid>
                 <Grid item>
@@ -365,6 +362,7 @@ class SearchForm extends React.Component {
                     onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboStartsWith')}
                     isOptionEqualToValue={(option, value) => false}
                     disableCloseOnSelect={true}
+                    defaultValue={this.state.comboStartsWith}
                   />
                 </Grid>
                 <Grid item>
@@ -376,6 +374,7 @@ class SearchForm extends React.Component {
                     onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboEndsWith')}
                     isOptionEqualToValue={(option, value) => false}
                     disableCloseOnSelect={true}
+                    defaultValue={this.state.comboEndsWith}
                   />
                 </Grid>
               </Grid >

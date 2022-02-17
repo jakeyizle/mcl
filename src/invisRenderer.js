@@ -74,8 +74,7 @@ ipcRenderer.invoke('loaded').then((result) => {
                     for (const obj of data) insertMove.run(obj);
                 });
                 insertManyMoves(moves);
-                conversionsLoaded = conversions.length;
-                ipcRenderer.invoke('gameLoad', conversionsLoaded);
+                ipcRenderer.invoke('gameLoad', conversions.length);
             } catch (e) {   
                 console.log(currentFile);
                 console.log(e);
