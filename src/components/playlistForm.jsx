@@ -1,4 +1,4 @@
-import { Button, Select, TextField, Autocomplete, FormControl, createFilterOptions } from '@mui/material';
+import { Button, Select, TextField, Autocomplete, FormControl, createFilterOptions, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
 import * as React from 'react';
 
 const db = require('better-sqlite3')('melee.db');
@@ -15,14 +15,15 @@ class PlaylistForm extends React.Component {
             playlists: playlists,
             selectedPlaylist: '',
             fields: fields,
+            dialogOpen: false,
+            recordingName: ''
         }
         this.alterPlaylist = this.alterPlaylist.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
         this.handleOrderChange = this.handleOrderChange.bind(this);
         this.getPlaylistTime = this.getPlaylistTime.bind(this);
+        this.handleInputChange = this.handleInputChange.bind(this);
     }
-
-
 
     alterPlaylist(action, e) {
         switch (action) {
@@ -61,7 +62,7 @@ class PlaylistForm extends React.Component {
             console.log(conversions);
             this.setState({
                 [name]: playlistValue || '',
-                conversions: conversions
+                conversions: conversions.sort((a, b) => a.playlistPosition - b.playlistPosition)
             })
         }
 
@@ -77,12 +78,31 @@ class PlaylistForm extends React.Component {
         let thisConversionUpdate = db.prepare('UPDATE playlistconversion SET playlistPosition = ? WHERE playlistName = ? AND conversionId = ?').run(newPosition, playlistName, conversionId)
         let conversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(this.state.selectedPlaylist);
         this.setState({
-            conversions: conversions
+            conversions: conversions.sort((a, b) => a.playlistPosition - b.playlistPosition)
         })
     }
+    handleInputChange(event) {
+        const target = event.target;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        const name = target.name;
+        if (name === 'recordingName') {
+                //tests that filename is valid -- https://stackoverflow.com/a/53635003/18022439
+                let windowsFileRegex = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$|([<>:"\/\\|?*])|(\.|\s)$/ig
+                if (windowsFileRegex.test(value)) {return;}
+        }
+        this.setState({
+            [name]: value
+        });
+    }
 
+    handleClose(isCancel) {
+        if (!isCancel) {
+            playConversions(this.state.conversions, true, this.state.recordingName)
+        }
+        this.setState({ dialogOpen: false, recordingName: '' })
+    }
     getPlaylistTime() {
-        function fmtMSS(s){return(s-(s%=60))/60+(9<s?':':':0')+s}
+        function fmtMSS(s) { return (s - (s %= 60)) / 60 + (9 < s ? ':' : ':0') + s }
 
         let sum = 0;
         for (const conversion of this.state.conversions) {
@@ -138,18 +158,34 @@ class PlaylistForm extends React.Component {
                         <div style={{ height: 600, width: '100%' }}>
                             <div style={{ display: 'flex', height: '100%' }}>
                                 <div style={{ flexGrow: 1 }}>
-                                    <ConversionDataGrid data={this.state.conversions.sort((a, b) => a.playlistPosition - b.playlistPosition)} isPlaylistGrid={true} onOrderChange={this.handleOrderChange} />
+                                    <ConversionDataGrid data={this.state.conversions} isPlaylistGrid={true} onOrderChange={this.handleOrderChange} />
                                 </div>
                             </div>
                         </div>
                         <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)}>Play all Replays</Button>
-                        <Button id="recordPlaylistReplays" onClick={(e) => playConversions(this.state.conversions, true)}>Record all Replays</Button>
+                        <Button id="recordPlaylistReplays" onClick={(e) => this.setState({ dialogOpen: true })}>Record all Replays</Button>
                     </div>
                     : this.state.selectedPlaylist === ''
                         ? <div>Select/Create a playlist </div>
                         : <div>No conversions loaded...</div>
                 }
+                <div>
+                    <Dialog open={this.state.dialogOpen} onClose={(e, r) => this.handleClose(true)}>
+                        <DialogTitle>Enter recording title</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                                Enter filename (if left blank a timestamp will be used)
+                            </DialogContentText>
+                            <TextField autoFocus fullWidth name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button name="Cancel" onClick={(e, r) => this.handleClose(true)}>Cancel</Button>
+                            <Button name="Record" onClick={(e, r) => this.handleClose(false)}>Record</Button>
+                        </DialogActions>
+                    </Dialog>
+                </div>
             </div>
+
 
         )
     }

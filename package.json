@@ -70,12 +70,14 @@
         "@slippi/slippi-js": "^5.1.1",
         "better-sqlite3": "^7.4.3",
         "electron-squirrel-startup": "^1.0.0",
+        "filenamify": "^5.1.0",
         "hazardous": "^0.3.0",
         "lodash": "^4.17.21",
         "obs-websocket-js": "^4.0.3",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
-        "uuid": "^8.3.2"
+        "uuid": "^8.3.2",
+        "valid-filename": "^4.0.0"
     },
     "devDependencies": {
         "@babel/core": "^7.16.0",

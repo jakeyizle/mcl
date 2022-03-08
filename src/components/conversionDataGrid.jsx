@@ -18,6 +18,7 @@ class ConversionDataGrid extends React.Component {
                 field: 'playList', headerName: 'Playlists', flex: 2, sortable: false,
                 renderCell: (params) => {
                     //update is slow if i use value
+                    //seems that value wont update until you click off autocomplete
                     return (
                         <FormControl sx={{ m: 1, width: 1000 }}>
                             <Autocomplete

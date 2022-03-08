@@ -12,7 +12,7 @@ const { resolve } = require('path');
 const db = require('better-sqlite3')('melee.db');
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 
-exports.playConversions = async function playAndRecordConversions(conversions, recordConversions) {
+exports.playConversions = async function playAndRecordConversions(conversions, recordConversions, recordingName) {
     let command = getReplayCommand(conversions);
 
     if (!recordConversions) {
@@ -29,6 +29,7 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
             const movieFolderPath = folderPath + dumpPath
             const movieDump = '\\framedump0.avi'            
             const fullPath = movieFolderPath + movieDump;
+            //its possible someone didnt do cleanup themselves - lets get rid of it
             if (fs.existsSync(fullPath)) {
                 let date = new Date().toJSON().replaceAll(':', '');
                 fs.renameSync(fullPath, movieFolderPath+`\\${date}.avi`)
@@ -36,16 +37,17 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
             await playConversions(command);
             let renameLoop = true;
             //file gets locked for a little bit after dolphin closes
+            let fileName = recordingName || new Date().toJSON().replaceAll(':', '');
             while (renameLoop) {
                 try {
-                    let date = new Date().toJSON().replaceAll(':', '');
-                    fs.renameSync(fullPath, movieFolderPath+`\\${date}.avi`)
+                    fs.renameSync(fullPath, movieFolderPath+`\\${fileName}.avi`)
                     renameLoop = false;
                 } catch (e) {}               
             }
         } else if (recordMethod === 'OBS') {
             disableOrEnableDolphinRecording(false);
             recordReplayWithOBS(command);
+            //todo rename file
         } else { throw `Bad Recording Parameter` }
     }
 }
