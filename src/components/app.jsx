@@ -4,10 +4,11 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.handleNavClick = this.handleNavClick.bind(this);
-        this.state = { displayedWidget: <HomeForm /> }
+        this.state = { displayedWidget: <HomeForm />, navItem: "Home" }
     }
 
     handleNavClick(navItem) {
+        if (navItem == this.state.navItem) {return}
         let widget;
         switch (navItem) {
             case "Search":
@@ -24,7 +25,7 @@ class App extends React.Component {
                 widget = <HomeForm />
                 break;
         }
-        this.setState({ displayedWidget: widget })
+        this.setState({ displayedWidget: widget, navItem: navItem })
     }
 
     render() {

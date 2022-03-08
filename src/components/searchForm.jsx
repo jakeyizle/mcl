@@ -2,8 +2,7 @@ import * as React from 'react';
 import { Characters, Stages, CharacterStrings, StageStrings, moves } from '../static/meleeIds.js';
 // import Button from '@mui/material/Button';
 import { TextField, Button, Checkbox, Box, FormControlLabel, Select, FormControl, Autocomplete, MenuItem, Grid, CircularProgress } from '@mui/material';
-import { isNull } from 'lodash';
-import { Cookies } from 'electron';
+
 const db = require('better-sqlite3')('melee.db');
 
 class SearchForm extends React.Component {
@@ -37,7 +36,8 @@ class SearchForm extends React.Component {
       dbAttackingPlayerList: [],
       dbAttackingPlayerOpen: false,
       dbDefendingPlayerList: [],
-      dbDefendingPlayerOpen: false
+      dbDefendingPlayerOpen: false,
+      comboMoves: []
     }
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
@@ -145,6 +145,13 @@ class SearchForm extends React.Component {
     }
     if (this.state.zeroToDeath) {
       whereString += ' AND zeroToDeath = 1'
+    }
+    if (this.state.comboMoves.length > 0) {
+      let values = this.state.comboMoves.map(x=>parseInt(x.value))
+      for (let i = 0; i < values.length; i++) {
+        whereString += ` AND id in (SELECT conversionId FROM moves WHERE moveId = @moveId${i})`;
+        queryObject[`moveId${i}`] = values[i];
+      }
     }
     if (this.state.comboContains.length > 0) {
       //no judgement zone
@@ -336,6 +343,18 @@ class SearchForm extends React.Component {
               </div>
               <div>
                 <FormControlLabel control={<Checkbox />} label="Exclude assigned conversions?" onChange={this.handleInputChange} name="excludeAssigned" checked={this.state.excludeAssigned} />
+              </div>
+              <div>
+              <Autocomplete
+                    multiple
+                    options={this.moves}
+                    getOptionLabel={(item) => item.label}
+                    renderInput={(params) => (<TextField {...params} label="Combo contains move(s)" variant="standard" />)}
+                    onChange={(event, value, reason, details) => this.handleAutocompleteInputChange(event, value, 'comboMoves')}
+                    disableCloseOnSelect={true}
+                    defaultValue={this.state.comboMoves}
+                    value={this.state.comboMoves}
+                  />
               </div>
               {/* these will throw warnings but its okay
                   forcing isOptionEqualToValue = false 

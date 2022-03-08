@@ -1,4 +1,4 @@
-import { Box, Button, TextField } from "@mui/material";
+import { Box, Button, FormControlLabel, Radio, RadioGroup, TextField, FormLabel } from "@mui/material";
 const db = require('better-sqlite3')('melee.db');
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 const settingsUpsert = db.prepare('INSERT INTO settings (key, value) values (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value');
@@ -18,7 +18,8 @@ class SettingsForm extends React.Component {
             preRoll: '',
             postRoll: '',
             obsPassword: '',
-            obsPort: ''
+            obsPort: '',
+            recordMethod: ''
         }
     }
 
@@ -34,26 +35,27 @@ class SettingsForm extends React.Component {
         const target = event.target;
         const name = target.name;
         let value;
-        if (target.type === 'file') {
-            const path = target.files[0].path;
-            value = path;
-            if (target.name === 'replayPath') {
-                //get the directory of a file
-                const regExp = /(.*\\)/;
-                value = regExp.exec(path)[0];
-            }
-        } else {
-            value = target.type === 'checkbox' ? target.checked : target.value;
+        switch (target.type) {
+            case 'file':
+                const path = target.files[0].path;
+                value = path;
+                if (target.name === 'replayPath') {
+                    //get the directory of a file
+                    const regExp = /(.*\\)/;
+                    value = regExp.exec(path)[0];
+                }
+                break;
+            default:
+                value = target.type === 'checkbox' ? target.checked : target.value;
+                break;
         }
-
         this.setState({
             [name]: value
         })
-        settingsUpsert.run( {key: name, value: value});
+        settingsUpsert.run({ key: name, value: value });
     }
 
     clickRefByName(inputName) {
-        console.log(inputName);
         this[inputName].current.click();
     }
 
@@ -95,7 +97,14 @@ class SettingsForm extends React.Component {
                 </div>
                 <div>
                     <TextField label="obsPort" type="number" placeholder="obsPort" onChange={this.handleInputChange} name="obsPort" value={this.state.obsPort} />
-                </div>                
+                </div>
+                <div>
+                    <FormLabel>Select recording method</FormLabel>
+                    <RadioGroup row name="recordMethod" onChange={this.handleInputChange} value={this.state.recordMethod}>
+                        <FormControlLabel value="Dolphin" control={<Radio />} label="Dolphin" />
+                        <FormControlLabel value="OBS" control={<Radio />} label="OBS" />
+                    </RadioGroup>
+                </div>
             </Box>
 
         )

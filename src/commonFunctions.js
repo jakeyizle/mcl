@@ -2,14 +2,66 @@ const path = require('path');
 const fs = require('fs');
 const {
     exec,
-    spawn
+    spawn,
+    spawnSync
 } = require('child_process');
 const { _ } = require('lodash')
 // const crypto = require('crypto');
 const OBSWebsocket = require('obs-websocket-js');
+const { resolve } = require('path');
+const db = require('better-sqlite3')('melee.db');
+const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 
-exports.playConversions = function playConversions(conversions, recordGame) {
-    const settingsStmt = db.prepare('SELECT value from settings where key = ?');
+exports.playConversions = async function playAndRecordConversions(conversions, recordConversions) {
+    let command = getReplayCommand(conversions);
+
+    if (!recordConversions) {
+        disableOrEnableDolphinRecording(false);
+        playConversions(command);
+    }
+    else {
+        const recordMethod = settingsStmt.get('recordMethod')?.value;
+        console.log(recordMethod)
+        if (recordMethod === 'Dolphin') {
+            disableOrEnableDolphinRecording(true);
+            const folderPath = getPlaybackFolder()
+            const dumpPath = 'User\\Dump\\Frames';
+            const movieFolderPath = folderPath + dumpPath
+            const movieDump = '\\framedump0.avi'            
+            const fullPath = movieFolderPath + movieDump;
+            if (fs.existsSync(fullPath)) {
+                let date = new Date().toJSON().replaceAll(':', '');
+                fs.renameSync(fullPath, movieFolderPath+`\\${date}.avi`)
+            }
+            await playConversions(command);
+            let renameLoop = true;
+            //file gets locked for a little bit after dolphin closes
+            while (renameLoop) {
+                try {
+                    let date = new Date().toJSON().replaceAll(':', '');
+                    fs.renameSync(fullPath, movieFolderPath+`\\${date}.avi`)
+                    renameLoop = false;
+                } catch (e) {}               
+            }
+        } else if (recordMethod === 'OBS') {
+            disableOrEnableDolphinRecording(false);
+            recordReplayWithOBS(command);
+        } else { throw `Bad Recording Parameter` }
+    }
+}
+
+async function playConversions(replayCommand) {
+    return new Promise((resolve, reject) => { 
+    var dolphinProcess = exec(replayCommand);
+     dolphinProcess.stdout.on('data', (line) => {
+        if (line.includes('[NO_GAME]')) {
+            spawnSync("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+            resolve();
+        }   
+    })
+})
+}
+function getReplayCommand(conversions) {
     const playbackPath = settingsStmt.get('dolphinPath').value;
     const isoPath = settingsStmt.get('isoPath').value;
     const preRoll = settingsStmt.get('preRoll')?.value || 0;
@@ -25,7 +77,6 @@ exports.playConversions = function playConversions(conversions, recordGame) {
         let startFrame = conversion.startFrame - preRoll;
         //javascript is fun (:
         let endFrame = conversion.endFrame + parseInt(postRoll);
-        console.log(startFrame, endFrame);
         var queueMessage = {
             "path": conversion.filepath,
             "startFrame": startFrame,
@@ -39,23 +90,11 @@ exports.playConversions = function playConversions(conversions, recordGame) {
     //if i use the json directly it doesnt work, so have to write it to a file first
     fs.writeFileSync(jsonPath, JSON.stringify(output));
     //pretty sure only the -i and -e are needed?
-    var replayCommand = `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}" --cout`;
-    console.log(replayCommand);
-    var dolphinProcess = exec(replayCommand)
-    if (recordGame) {
-        recordReplay(dolphinProcess);
-    } else {
-        dolphinProcess.stdout.on('data', (line) => {
-            if (line.includes('[NO_GAME]')) {
-                spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
-            }
-        })
-    }
+    return `"${playbackPath}" -i "${jsonPath}" -b -e "${isoPath}" --cout`;
 }
 
-async function recordReplay(dolphinProcess) {
+async function recordReplayWithOBS(replayCommand) {
     try {
-        const settingsStmt = db.prepare('SELECT value from settings where key = ?');
         const obsPassword = settingsStmt.get('obsPassword').value;
         const obsPort = settingsStmt.get('obsPort').value;
         const obs = new OBSWebsocket();
@@ -66,6 +105,7 @@ async function recordReplay(dolphinProcess) {
         let recordingStarted;
         let fileName;
 
+        var dolphinProcess = exec(replayCommand)
         dolphinProcess.stdout.on('data', (line) => {
             const commands = _.split(line, "\r\n");
             _.each(commands, async (command) => {
@@ -100,7 +140,7 @@ async function recordReplay(dolphinProcess) {
                     fileName = recordingStatus.recordingFilename;
                     console.log(fileName);
                     await obs.send("StopRecording");
-                    spawn("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+                    spawnSync("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
                     recordingStarted = false;
                 }
             });
@@ -110,4 +150,21 @@ async function recordReplay(dolphinProcess) {
     }
 }
 
+function disableOrEnableDolphinRecording(enable = false) {
+    const folderPath = getPlaybackFolder()
+    const configPath = 'User\\Config\\Dolphin.ini';
+    const fullPlaybackPath = folderPath + configPath;
 
+    const settingsRegExp = /(DumpFrames =).*/;
+    const config = fs.readFileSync(fullPlaybackPath, 'utf-8');
+    const newSetting = enable ? 'DumpFrames = True' : 'DumpFrames = False';
+    const newConfig = config.replace(settingsRegExp, newSetting, 'utf-8');
+    fs.writeFileSync(fullPlaybackPath, newConfig);
+}
+
+
+function getPlaybackFolder() {
+    const regExp = /(.*\\)/;
+    const playbackPath = settingsStmt.get('dolphinPath').value;
+    return regExp.exec(playbackPath)[0];
+}
