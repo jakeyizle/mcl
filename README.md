@@ -11,7 +11,6 @@ Security:
 
 
 TODO (no particular order):  
-- Add option for choosing between OBS recording and dolphin framedumps   
 - Add option for gfycat uploading    
 - Add option for recordings of playlists to be split into different files    
 - More search options (search based on moves in conversion, etc)    
