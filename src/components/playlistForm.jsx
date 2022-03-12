@@ -2,7 +2,7 @@ import { Button, Box, TextField, Autocomplete, FormControl, createFilterOptions,
 import * as fs from 'fs'
 import * as React from 'react';
 import { playConversions, isOBSOn } from './commonFunctions.js'
-const {dialog} = require('electron').remote;
+const { dialog } = require('electron').remote;
 
 const db = require('better-sqlite3')('melee.db');
 const filter = createFilterOptions();
@@ -114,7 +114,8 @@ class PlaylistForm extends React.Component {
             const regExp = /(.*\\)/;
             value = regExp.exec(path)[0];
         } else if (target.type === 'button') {
-            value = folder?.[0]+'\\';
+            if (!folder) return;
+            value = folder?.[0] + '\\';
         }
         this.setState({
             [name]: value
@@ -122,13 +123,17 @@ class PlaylistForm extends React.Component {
     }
 
     handleDialogClose(successRecording = '') {
-        this.setState({ dialogOpen: false, recordingName: '', successRecording: successRecording })
+        this.setState({ dialogOpen: false, recordingName: '', successRecording: successRecording });
+        setTimeout(() => {
+            this.setState({successRecording: ''})
+        }, 4000)
     }
 
     handleDialogOpen() {
         this.setState({ dialogOpen: true, replayPathError: '', recordingName: this.state.selectedPlaylist })
     }
-    async recordReplay() {
+    async recordReplay(e) {
+        e?.preventDefault();
         if (this.state.recordingPath == '') {
             this.setState({ replayPathError: 'Please select a folder' })
             return
@@ -141,8 +146,8 @@ class PlaylistForm extends React.Component {
             this.setState({ replayPathError: `${filePath} already exists` })
             return
         }
-        let OBSCanConnect = await isOBSOn();
-        if (recordMethod === 'OBS' && !OBSCanConnect) {
+        // let OBSCanConnect = await isOBSOn();
+        if (recordMethod === 'OBS' && !await isOBSOn()) {
             this.setState({ replayPathError: 'OBS is either not open or configured incorrectly' })
             return
         }
@@ -221,25 +226,21 @@ class PlaylistForm extends React.Component {
                         : <div>No conversions loaded...</div>
                 }
                 <div>
-                    <Dialog open={this.state.dialogOpen} onClose={() => this.handleDialogClose()}>
+                    <Dialog open={this.state.dialogOpen} onClose={() => this.handleDialogClose()} onSubmit={(e) => this.recordReplay(e)} component="form">
                         <DialogTitle>Enter recording folder and name</DialogTitle>
                         {this.state.replayPathError && <Alert severity="error">{this.state.replayPathError}</Alert>}
                         <DialogContent>
-                                <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({ properties: ['openDirectory'] }))}>Set Path Where Recordings Will Be Saved</Button>
-                                <div>
-
+                            <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({ properties: ['openDirectory'] }))}>Set Path Where Recordings Will Be Saved</Button>
+                            <div>
                                 {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
-                            </div>                                                        
-                        
+                            </div>
                         </DialogContent>
                         <DialogContent>
-
-                        <TextField autoFocus fullWidth label="File name" name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
+                            <TextField autoFocus fullWidth label="File name" name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
                         </DialogContent>
-
                         <DialogActions>
                             <Button name="Cancel" onClick={() => this.handleDialogClose()}>Cancel</Button>
-                            <Button name="Record" onClick={() => this.recordReplay()}>Record</Button>
+                            <Button type="submit" name="Record" >Record</Button>
                         </DialogActions>
                     </Dialog>
                 </div>

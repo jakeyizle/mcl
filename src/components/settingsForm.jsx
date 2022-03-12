@@ -37,7 +37,6 @@ class SettingsForm extends React.Component {
     //todo: clean up folder select
     handleInputChange(event, folder) {
         const target = event.target;
-        console.log(target);
         const name = target.name;
         let value;
         switch (target.type) {
@@ -51,6 +50,7 @@ class SettingsForm extends React.Component {
                 }
                 break;
             case 'button':
+                if (!folder) return;
                 value = folder?.[0]+'\\';
                 break;
             default:
@@ -67,9 +67,6 @@ class SettingsForm extends React.Component {
         this[inputName].current.click();
     }
 
-    myTest() {
-        let asdf = dialog.showOpenDialogSync({properties: ['openDirectory']});
-    }
     render() {
         return (
             <Box
@@ -80,7 +77,6 @@ class SettingsForm extends React.Component {
                 noValidate
                 autoComplete="off"
             >
-
                 <div>
                     {/*Material doesnt have a component that can do FOLDER input*/}
                     <input type="file" name="replayPath" webkitdirectory="true" ref={this.replayPath} onChange={this.handleInputChange} hidden />
@@ -98,8 +94,6 @@ class SettingsForm extends React.Component {
                     {this.state.dolphinPath && <span>{this.state.dolphinPath}</span>}
                 </div>
                 <div>
-                    {/* <input type="file" name="recordingPath" webkitdirectory="true" ref={this.recordingPath} onChange={this.handleInputChange} hidden multiple/> */}
-                    {/* <Button variant="outlined" onClick={(e) => this.clickRefByName('recordingPath')}>Set Path Where Recordings Will Be Saved</Button> */}
                     <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({properties: ['openDirectory']}))}>Set Path Where Recordings Will Be Saved</Button>
                     {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
                 </div>
