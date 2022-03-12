@@ -45,6 +45,7 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
                 if (i > 10000) { return}
                 try {
                     fs.copyFileSync(fullMoviePath, recordedFilePath)
+                    fs.unlinkSync(fullMoviePath)
                     renameLoop = false;
                 } catch (e) { console.log(e) }
             }
@@ -60,6 +61,7 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
                 if (i > 10000) { return}
                 try {
                     fs.copyFileSync(recordedFile, recordedFilePath)
+                    fs.unlinkSync(recordedFile)
                     renameLoop = false;
                 } catch (e) { }
             }
