@@ -12,7 +12,7 @@ const { resolve } = require('path');
 const db = require('better-sqlite3')('melee.db');
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 
-exports.playConversions = async function playAndRecordConversions(conversions, recordConversions, recordingName) {
+exports.playConversions = async function playAndRecordConversions(conversions, recordConversions, recordingPath, recordingName) {
     let command = getReplayCommand(conversions);
 
     if (!recordConversions) {
@@ -21,47 +21,70 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
     }
     else {
         const recordMethod = settingsStmt.get('recordMethod')?.value;
-        console.log(recordMethod)
+        const fileName = recordingName || new Date().toJSON().replaceAll(':', '');
+        let recordedFilePath = recordingPath + `${fileName}.`
         if (recordMethod === 'Dolphin') {
             disableOrEnableDolphinRecording(true);
+            recordedFilePath += 'avi'
             const folderPath = getPlaybackFolder()
             const dumpPath = 'User\\Dump\\Frames';
             const movieFolderPath = folderPath + dumpPath
-            const movieDump = '\\framedump0.avi'            
-            const fullPath = movieFolderPath + movieDump;
+            const movieDump = '\\framedump0.avi'
+            const fullMoviePath = movieFolderPath + movieDump;
             //its possible someone didnt do cleanup themselves - lets get rid of it
-            if (fs.existsSync(fullPath)) {
+            if (fs.existsSync(fullMoviePath)) {
                 let date = new Date().toJSON().replaceAll(':', '');
-                fs.renameSync(fullPath, movieFolderPath+`\\${date}.avi`)
+                fs.renameSync(fullMoviePath, movieFolderPath + `\\${date}.avi`)
             }
             await playConversions(command);
             let renameLoop = true;
             //file gets locked for a little bit after dolphin closes
-            let fileName = recordingName || new Date().toJSON().replaceAll(':', '');
             while (renameLoop) {
                 try {
-                    fs.renameSync(fullPath, movieFolderPath+`\\${fileName}.avi`)
+                    fs.renameSync(fullMoviePath, recordedFilePath)
                     renameLoop = false;
-                } catch (e) {}               
+                } catch (e) { }
             }
         } else if (recordMethod === 'OBS') {
             disableOrEnableDolphinRecording(false);
-            recordReplayWithOBS(command);
-            //todo rename file
+            recordedFilePath += 'mkv'
+            let recordedFile = await recordReplayWithOBS(command);
+            let renameLoop = true;
+            while (renameLoop) {
+                try {
+                    fs.renameSync(recordedFile, recordedFilePath)
+                    renameLoop = false;
+                } catch (e) { }
+            }
         } else { throw `Bad Recording Parameter` }
+        return recordedFilePath;
+    }
+}
+
+exports.isOBSOn = async function isOBSOn() {
+    try {
+        const obsPassword = settingsStmt.get('obsPassword').value;
+        const obsPort = settingsStmt.get('obsPort').value;
+        const obs = new OBSWebsocket();
+        await obs.connect({ address: `localhost:${obsPort}`, password: obsPassword });
+        obs.disconnect();
+        return true
+    } catch (e) {
+        console.log(e);
+        return false
     }
 }
 
 async function playConversions(replayCommand) {
-    return new Promise((resolve, reject) => { 
-    var dolphinProcess = exec(replayCommand);
-     dolphinProcess.stdout.on('data', (line) => {
-        if (line.includes('[NO_GAME]')) {
-            spawnSync("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
-            resolve();
-        }   
+    return new Promise((resolve, reject) => {
+        var dolphinProcess = exec(replayCommand);
+        dolphinProcess.stdout.on('data', (line) => {
+            if (line.includes('[NO_GAME]')) {
+                spawnSync("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+                resolve();
+            }
+        })
     })
-})
 }
 function getReplayCommand(conversions) {
     const playbackPath = settingsStmt.get('dolphinPath').value;
@@ -96,60 +119,63 @@ function getReplayCommand(conversions) {
 }
 
 async function recordReplayWithOBS(replayCommand) {
-    try {
-        const obsPassword = settingsStmt.get('obsPassword').value;
-        const obsPort = settingsStmt.get('obsPort').value;
-        const obs = new OBSWebsocket();
-        obs.connect({ address: `localhost:${obsPort}`, password: obsPassword });
-        let startFrame;
-        let endFrame;
-        let currentFrame;
-        let recordingStarted;
-        let fileName;
+    return new Promise((resolve, reject) => {
+        try {
+            const obsPassword = settingsStmt.get('obsPassword').value;
+            const obsPort = settingsStmt.get('obsPort').value;
+            const obs = new OBSWebsocket();
+            await obs.connect({ address: `localhost:${obsPort}`, password: obsPassword });
+            let startFrame;
+            let endFrame;
+            let currentFrame;
+            let recordingStarted;
+            let fileName;
 
-        var dolphinProcess = exec(replayCommand)
-        dolphinProcess.stdout.on('data', (line) => {
-            const commands = _.split(line, "\r\n");
-            _.each(commands, async (command) => {
-                command = _.split(command, " ");
-                // console.log(command);
-                if (command[0] === '[PLAYBACK_START_FRAME]') {
-                    startFrame = parseInt(command[1]);
-                }
-                if (command[0] === '[PLAYBACK_END_FRAME]') {
-                    endFrame = parseInt(command[1]);
-                }
-                if (command[0] === '[CURRENT_FRAME]') {
-                    currentFrame = parseInt(command[1]);
-                    if (currentFrame == startFrame) {
-                        if (!recordingStarted) {
-                            console.log('start record');
-                            await obs.send("StartRecording");
-                            recordingStarted = true;
-                        } else {
-                            console.log('resume record');
-                            obs.send("ResumeRecording").catch((err) => console.log(err));
+            var dolphinProcess = exec(replayCommand)
+            dolphinProcess.stdout.on('data', (line) => {
+                const commands = _.split(line, "\r\n");
+                _.each(commands, async (command) => {
+                    command = _.split(command, " ");
+                    // console.log(command);
+                    if (command[0] === '[PLAYBACK_START_FRAME]') {
+                        startFrame = parseInt(command[1]);
+                    }
+                    if (command[0] === '[PLAYBACK_END_FRAME]') {
+                        endFrame = parseInt(command[1]);
+                    }
+                    if (command[0] === '[CURRENT_FRAME]') {
+                        currentFrame = parseInt(command[1]);
+                        if (currentFrame == startFrame) {
+                            if (!recordingStarted) {
+                                console.log('start record');
+                                await obs.send("StartRecording");
+                                recordingStarted = true;
+                            } else {
+                                console.log('resume record');
+                                obs.send("ResumeRecording").catch((err) => console.log(err));
+                            }
+                        }
+                        if (currentFrame == endFrame) {
+                            console.log('pauseRecord');
+                            obs.send("PauseRecording").catch((err) => console.log(err));
                         }
                     }
-                    if (currentFrame == endFrame) {
-                        console.log('pauseRecord');
-                        obs.send("PauseRecording").catch((err) => console.log(err));
+                    if (command[0] === '[NO_GAME]') {
+                        console.log('stopRecord');
+                        let recordingStatus = await obs.send("GetRecordingStatus");
+                        fileName = recordingStatus.recordingFilename;
+                        await obs.send("StopRecording");
+                        spawnSync("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
+                        recordingStarted = false;
+                        resolve(fileName);
                     }
-                }
-                if (command[0] === '[NO_GAME]') {
-                    console.log('stopRecord');
-                    let recordingStatus = await obs.send("GetRecordingStatus");
-                    fileName = recordingStatus.recordingFilename;
-                    console.log(fileName);
-                    await obs.send("StopRecording");
-                    spawnSync("taskkill", ["/pid", dolphinProcess.pid, '/f', '/t']);
-                    recordingStarted = false;
-                }
-            });
-        })
-    } catch (e) {
-        console.log(e);
-    }
+                });
+            })
+        } catch (e) {
+            console.log(e);
+            reject();
+        }
+    })
 }
 
 function disableOrEnableDolphinRecording(enable = false) {

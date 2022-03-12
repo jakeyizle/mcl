@@ -71,8 +71,7 @@ class ConversionDataGrid extends React.Component {
             })
             columns.forEach(x => x.sortable = false);
         }
-        this.columns = columns;
-        
+        this.columns = columns;        
         this.handleChange = this.handleChange.bind(this);
     }
 
@@ -85,7 +84,8 @@ class ConversionDataGrid extends React.Component {
             let playlist = details.option.label;
             let playlistPosition = db.prepare('SELECT playlistPosition FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').get(playlist, conversionId);
             let playlistPositionUpdate = db.prepare('UPDATE playlistConversion SET playlistPosition = playlistPosition - 1 WHERE playlistName = ? and playlistPosition > ?').run(playlist, playlistPosition.playlistPosition);
-            let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').run(playlist, conversionId);
+            let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').run(playlist, conversionId);            
+            this.props.onConversionRemove?.();
         } else if (reason === 'selectOption') {
             let playlist = details.option.label;
             let dbPlaylistPosition = db.prepare('SELECT playlistPosition FROM playlistConversion WHERE playlistName = ? ORDER BY 1 DESC').get(playlist);
@@ -96,8 +96,9 @@ class ConversionDataGrid extends React.Component {
             for (let i = 0; i < conversionInfo.length; i ++) {
                 let playlistPositionUpdateStmt = db.prepare('UPDATE playlistConversion SET playlistPosition = playlistPosition - 1 WHERE playlistName = ? and playlistPosition > ?')
                 let playlistPositionUpdate = playlistPositionUpdateStmt.run(conversionInfo[i].playlistName, conversionInfo[i].playlistPosition);
-            }
+            }            
             let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE conversionId = ?').run(conversionId);
+            this.props.onConversionRemove?.();
         }
     }
 

@@ -1,30 +1,42 @@
-import { Button, Select, TextField, Autocomplete, FormControl, createFilterOptions, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
+import { Button, Select, TextField, Autocomplete, FormControl, createFilterOptions, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Alert } from '@mui/material';
+import * as fs from 'fs'
 import * as React from 'react';
+import { playConversions, isOBSOn } from './commonFunctions.js'
 
 const db = require('better-sqlite3')('melee.db');
-import { playConversions } from './commonFunctions.js'
 const filter = createFilterOptions();
+const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 
 class PlaylistForm extends React.Component {
     constructor(props) {
         super(props);
         let fields = ['playList', 'playReplay', 'startAt', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
         let playlists = db.prepare('SELECT * from playlists').all().map(x => ({ label: x.name, value: x.name }));
+        this.recordingPath = React.createRef();
         this.state = {
             conversions: undefined,
             playlists: playlists,
             selectedPlaylist: '',
             fields: fields,
             dialogOpen: false,
-            recordingName: ''
+            recordingName: '',
+            recordingPath: settingsStmt.get('recordingPath')?.value || '',
+            replayPathError: '',
+            successRecording: ''
         }
         this.alterPlaylist = this.alterPlaylist.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
         this.handleOrderChange = this.handleOrderChange.bind(this);
         this.getPlaylistTime = this.getPlaylistTime.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
+        this.handleConversionRemove = this.handleConversionRemove.bind(this);
+        this.clickRefByName = this.clickRefByName.bind(this);
+        this.recordReplay = this.recordReplay.bind(this);
     }
 
+    clickRefByName(inputName) {
+        this[inputName].current.click();
+    }
     alterPlaylist(action, e) {
         switch (action) {
             case 'delete':
@@ -68,6 +80,10 @@ class PlaylistForm extends React.Component {
 
     }
 
+    handleConversionRemove() {
+        let conversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(this.state.selectedPlaylist);
+        this.setState({ conversions: conversions.sort((a, b) => a.playlistPosition - b.playlistPosition) })
+    }
     handleOrderChange(params, orderChange) {
         let playlistName = params.row.playlistName;
         let conversionId = params.row.id;
@@ -83,24 +99,53 @@ class PlaylistForm extends React.Component {
     }
     handleInputChange(event) {
         const target = event.target;
-        const value = target.type === 'checkbox' ? target.checked : target.value;
+        let value = target.type === 'checkbox' ? target.checked : target.value;
         const name = target.name;
         if (name === 'recordingName') {
-                //tests that filename is valid -- https://stackoverflow.com/a/53635003/18022439
-                let windowsFileRegex = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$|([<>:"\/\\|?*])|(\.|\s)$/ig
-                if (windowsFileRegex.test(value)) {return;}
+            //tests that filename is valid -- https://stackoverflow.com/a/53635003/18022439
+            let windowsFileRegex = /([<>:"\/\\|?*])|(\.|\s)$/ig
+            if (windowsFileRegex.test(value)) { return; }
+        }
+        if (target.type === 'file') {
+            const path = target.files[0].path;
+            //get the directory of a file
+            const regExp = /(.*\\)/;
+            value = regExp.exec(path)[0];
         }
         this.setState({
             [name]: value
         });
     }
 
-    handleClose(isCancel) {
-        if (!isCancel) {
-            playConversions(this.state.conversions, true, this.state.recordingName)
-        }
-        this.setState({ dialogOpen: false, recordingName: '' })
+    handleDialogClose(successRecording = '') {
+        this.setState({ dialogOpen: false, recordingName: '', successRecording: successRecording })
     }
+
+    handleDialogOpen() {
+        this.setState({ dialogOpen: true, replayPathError: '' })
+    }
+    async recordReplay() {
+        if (this.state.recordingPath == '') {
+            this.setState({ replayPathError: 'Please select a folder' })
+            return
+        }
+        let recordMethod = settingsStmt.get('recordMethod').value;
+        //todo: OBS can be set to record different file types
+        let fileExtension = recordMethod === 'OBS' ? '.mkv' : '.avi';
+        let filePath = this.state.recordingPath + this.state.recordingName + fileExtension
+        if (fs.existsSync(filePath)) {
+            this.setState({ replayPathError: `${filePath} already exists` })
+            return
+        }
+        let OBSCanConnect = await isOBSOn();
+        if (recordMethod === 'OBS' && !OBSCanConnect) {
+            this.setState({ replayPathError: 'OBS is either not open or configured incorrectly' })
+            return
+        }
+        let sucessFileName = await playConversions(this.state.conversions, true, this.state.recordingPath, this.state.recordingName)
+        this.handleDialogClose(sucessFileName)
+    }
+
     getPlaylistTime() {
         function fmtMSS(s) { return (s - (s %= 60)) / 60 + (9 < s ? ':' : ':0') + s }
 
@@ -111,9 +156,11 @@ class PlaylistForm extends React.Component {
         let seconds = Math.round(sum / 60);
         return fmtMSS(seconds)
     }
+
     render() {
         return (
             <div>
+                {this.state.successRecording && <Alert severity="success">Succesfully recorded {this.state.successRecording}</Alert>}
                 <div>
                     <FormControl sx={{ m: 1, width: 200 }}>
                         <Autocomplete
@@ -158,35 +205,39 @@ class PlaylistForm extends React.Component {
                         <div style={{ height: 600, width: '100%' }}>
                             <div style={{ display: 'flex', height: '100%' }}>
                                 <div style={{ flexGrow: 1 }}>
-                                    <ConversionDataGrid data={this.state.conversions} isPlaylistGrid={true} onOrderChange={this.handleOrderChange} />
+                                    <ConversionDataGrid data={this.state.conversions} isPlaylistGrid={true} onOrderChange={this.handleOrderChange} onConversionRemove={this.handleConversionRemove} />
                                 </div>
                             </div>
                         </div>
                         <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)}>Play all Replays</Button>
-                        <Button id="recordPlaylistReplays" onClick={(e) => this.setState({ dialogOpen: true })}>Record all Replays</Button>
+                        <Button id="recordPlaylistReplays" onClick={(e) => this.handleDialogOpen()}>Record all Replays</Button>
                     </div>
                     : this.state.selectedPlaylist === ''
                         ? <div>Select/Create a playlist </div>
                         : <div>No conversions loaded...</div>
                 }
                 <div>
-                    <Dialog open={this.state.dialogOpen} onClose={(e, r) => this.handleClose(true)}>
+                    <Dialog open={this.state.dialogOpen} onClose={() => this.handleDialogClose()}>
                         <DialogTitle>Enter recording title</DialogTitle>
+                        {this.state.replayPathError && <Alert severity="error">{this.state.replayPathError}</Alert>}
                         <DialogContent>
+                            <div>
+                                <input type="file" name="recordingPath" webkitdirectory="true" ref={this.recordingPath} onChange={this.handleInputChange} hidden />
+                                <Button variant="outlined" onClick={(e) => this.clickRefByName('recordingPath')}>Recording Path</Button>
+                                {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
+                            </div>
                             <DialogContentText>
                                 Enter filename (if left blank a timestamp will be used)
                             </DialogContentText>
-                            <TextField autoFocus fullWidth name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
+                            <TextField autoFocus fullWidth label="File name" name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
                         </DialogContent>
                         <DialogActions>
-                            <Button name="Cancel" onClick={(e, r) => this.handleClose(true)}>Cancel</Button>
-                            <Button name="Record" onClick={(e, r) => this.handleClose(false)}>Record</Button>
+                            <Button name="Cancel" onClick={() => this.handleDialogClose()}>Cancel</Button>
+                            <Button name="Record" onClick={() => this.recordReplay()}>Record</Button>
                         </DialogActions>
                     </Dialog>
                 </div>
             </div>
-
-
         )
     }
 }

@@ -11,6 +11,7 @@ class SettingsForm extends React.Component {
         this.replayPath = React.createRef();
         this.isoPath = React.createRef();
         this.dolphinPath = React.createRef();
+        this.recordingPath = React.createRef();
         this.state = {
             replayPath: '',
             isoPath: '',
@@ -19,7 +20,8 @@ class SettingsForm extends React.Component {
             postRoll: '',
             obsPassword: '',
             obsPort: '',
-            recordMethod: ''
+            recordMethod: '',
+            recordingPath: ''
         }
     }
 
@@ -39,7 +41,7 @@ class SettingsForm extends React.Component {
             case 'file':
                 const path = target.files[0].path;
                 value = path;
-                if (target.name === 'replayPath') {
+                if (target.name === 'replayPath' || target.name === 'recordingPath') {
                     //get the directory of a file
                     const regExp = /(.*\\)/;
                     value = regExp.exec(path)[0];
@@ -85,6 +87,11 @@ class SettingsForm extends React.Component {
                     <input type="file" name="dolphinPath" ref={this.dolphinPath} onChange={this.handleInputChange} hidden />
                     <Button variant="outlined" onClick={(e) => this.clickRefByName('dolphinPath')}>Set Playback Dolphin Path</Button>
                     {this.state.dolphinPath && <span>{this.state.dolphinPath}</span>}
+                </div>
+                <div>
+                    <input type="file" name="recordingPath" webkitdirectory="true" ref={this.recordingPath} onChange={this.handleInputChange} hidden />
+                    <Button variant="outlined" onClick={(e) => this.clickRefByName('recordingPath')}>Set Path Where Recordings Will Be Saved</Button>
+                    {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
                 </div>
                 <div>
                     <TextField label="preRoll frames" type="number" placeholder="preRoll frames" onChange={this.handleInputChange} name="preRoll" value={this.state.preRoll} />
