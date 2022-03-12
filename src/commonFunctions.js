@@ -39,20 +39,27 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
             await playConversions(command);
             let renameLoop = true;
             //file gets locked for a little bit after dolphin closes
+            let i = 0;
             while (renameLoop) {
+                i++
+                if (i > 10000) { return}
                 try {
-                    fs.renameSync(fullMoviePath, recordedFilePath)
+                    fs.copyFileSync(fullMoviePath, recordedFilePath)
                     renameLoop = false;
-                } catch (e) { }
+                } catch (e) { console.log(e) }
             }
+            console.log('done')
         } else if (recordMethod === 'OBS') {
             disableOrEnableDolphinRecording(false);
             recordedFilePath += 'mkv'
             let recordedFile = await recordReplayWithOBS(command);
             let renameLoop = true;
+            let i = 0;
             while (renameLoop) {
+                i++
+                if (i > 10000) { return}
                 try {
-                    fs.renameSync(recordedFile, recordedFilePath)
+                    fs.copyFileSync(recordedFile, recordedFilePath)
                     renameLoop = false;
                 } catch (e) { }
             }
@@ -124,7 +131,7 @@ async function recordReplayWithOBS(replayCommand) {
             const obsPassword = settingsStmt.get('obsPassword').value;
             const obsPort = settingsStmt.get('obsPort').value;
             const obs = new OBSWebsocket();
-            await obs.connect({ address: `localhost:${obsPort}`, password: obsPassword });
+            obs.connect({ address: `localhost:${obsPort}`, password: obsPassword });
             let startFrame;
             let endFrame;
             let currentFrame;

@@ -1,7 +1,8 @@
-import { Button, Select, TextField, Autocomplete, FormControl, createFilterOptions, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Alert } from '@mui/material';
+import { Button, Box, TextField, Autocomplete, FormControl, createFilterOptions, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Alert } from '@mui/material';
 import * as fs from 'fs'
 import * as React from 'react';
 import { playConversions, isOBSOn } from './commonFunctions.js'
+const {dialog} = require('electron').remote;
 
 const db = require('better-sqlite3')('melee.db');
 const filter = createFilterOptions();
@@ -97,7 +98,8 @@ class PlaylistForm extends React.Component {
             conversions: conversions.sort((a, b) => a.playlistPosition - b.playlistPosition)
         })
     }
-    handleInputChange(event) {
+    //todo clean up folder select
+    handleInputChange(event, folder) {
         const target = event.target;
         let value = target.type === 'checkbox' ? target.checked : target.value;
         const name = target.name;
@@ -111,6 +113,8 @@ class PlaylistForm extends React.Component {
             //get the directory of a file
             const regExp = /(.*\\)/;
             value = regExp.exec(path)[0];
+        } else if (target.type === 'button') {
+            value = folder?.[0]+'\\';
         }
         this.setState({
             [name]: value
@@ -122,7 +126,7 @@ class PlaylistForm extends React.Component {
     }
 
     handleDialogOpen() {
-        this.setState({ dialogOpen: true, replayPathError: '' })
+        this.setState({ dialogOpen: true, replayPathError: '', recordingName: this.state.selectedPlaylist })
     }
     async recordReplay() {
         if (this.state.recordingPath == '') {
@@ -218,19 +222,21 @@ class PlaylistForm extends React.Component {
                 }
                 <div>
                     <Dialog open={this.state.dialogOpen} onClose={() => this.handleDialogClose()}>
-                        <DialogTitle>Enter recording title</DialogTitle>
+                        <DialogTitle>Enter recording folder and name</DialogTitle>
                         {this.state.replayPathError && <Alert severity="error">{this.state.replayPathError}</Alert>}
                         <DialogContent>
-                            <div>
-                                <input type="file" name="recordingPath" webkitdirectory="true" ref={this.recordingPath} onChange={this.handleInputChange} hidden />
-                                <Button variant="outlined" onClick={(e) => this.clickRefByName('recordingPath')}>Recording Path</Button>
+                                <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({ properties: ['openDirectory'] }))}>Set Path Where Recordings Will Be Saved</Button>
+                                <div>
+
                                 {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
-                            </div>
-                            <DialogContentText>
-                                Enter filename (if left blank a timestamp will be used)
-                            </DialogContentText>
-                            <TextField autoFocus fullWidth label="File name" name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
+                            </div>                                                        
+                        
                         </DialogContent>
+                        <DialogContent>
+
+                        <TextField autoFocus fullWidth label="File name" name="recordingName" value={this.state.recordingName} onChange={(e) => this.handleInputChange(e)}></TextField>
+                        </DialogContent>
+
                         <DialogActions>
                             <Button name="Cancel" onClick={() => this.handleDialogClose()}>Cancel</Button>
                             <Button name="Record" onClick={() => this.recordReplay()}>Record</Button>

@@ -1,4 +1,5 @@
 import { Box, Button, FormControlLabel, Radio, RadioGroup, TextField, FormLabel } from "@mui/material";
+const {dialog} = require('electron').remote;
 const db = require('better-sqlite3')('melee.db');
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 const settingsUpsert = db.prepare('INSERT INTO settings (key, value) values (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value');
@@ -33,26 +34,31 @@ class SettingsForm extends React.Component {
             })
         }
     }
-    handleInputChange(event) {
+    //todo: clean up folder select
+    handleInputChange(event, folder) {
         const target = event.target;
+        console.log(target);
         const name = target.name;
         let value;
         switch (target.type) {
             case 'file':
-                const path = target.files[0].path;
+                const path = target.files[0]?.path;                
                 value = path;
-                if (target.name === 'replayPath' || target.name === 'recordingPath') {
+                if (target.name === 'replayPath') {
                     //get the directory of a file
                     const regExp = /(.*\\)/;
                     value = regExp.exec(path)[0];
                 }
                 break;
+            case 'button':
+                value = folder?.[0]+'\\';
+                break;
             default:
                 value = target.type === 'checkbox' ? target.checked : target.value;
                 break;
-        }
+        }        
         this.setState({
-            [name]: value
+            [name]:  value
         })
         settingsUpsert.run({ key: name, value: value });
     }
@@ -61,6 +67,9 @@ class SettingsForm extends React.Component {
         this[inputName].current.click();
     }
 
+    myTest() {
+        let asdf = dialog.showOpenDialogSync({properties: ['openDirectory']});
+    }
     render() {
         return (
             <Box
@@ -89,8 +98,9 @@ class SettingsForm extends React.Component {
                     {this.state.dolphinPath && <span>{this.state.dolphinPath}</span>}
                 </div>
                 <div>
-                    <input type="file" name="recordingPath" webkitdirectory="true" ref={this.recordingPath} onChange={this.handleInputChange} hidden />
-                    <Button variant="outlined" onClick={(e) => this.clickRefByName('recordingPath')}>Set Path Where Recordings Will Be Saved</Button>
+                    {/* <input type="file" name="recordingPath" webkitdirectory="true" ref={this.recordingPath} onChange={this.handleInputChange} hidden multiple/> */}
+                    {/* <Button variant="outlined" onClick={(e) => this.clickRefByName('recordingPath')}>Set Path Where Recordings Will Be Saved</Button> */}
+                    <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({properties: ['openDirectory']}))}>Set Path Where Recordings Will Be Saved</Button>
                     {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
                 </div>
                 <div>
