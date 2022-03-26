@@ -1,52 +1,47 @@
-import { Box, LinearProgress, Typography } from '@mui/material';
+import { Box, LinearProgress, Typography, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import { allGridColumnsSelector } from '@mui/x-data-grid';
 import { ipcRenderer } from 'electron/renderer'
 
 const gameCountStmt = db.prepare('SELECT COUNT (*) FROM games').pluck();
 const conversionCountStmt = db.prepare('SELECT COUNT (*) FROM conversions').pluck();
-
+const errorStmt = db.prepare('SELECT * FROM errorGame');
 class DatabaseProgressBar extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       gameCount: gameCountStmt.get(),
       conversionCount: conversionCountStmt.get(),
-      current: undefined,
-      max: undefined,
-      windowCount: undefined
+      currentLoadCount: undefined,
+      maxLoadCount: undefined,
+      windowCount: undefined,
+      errorGames: errorStmt.all()
     }
-    //TODO i think i need to rebuild this partially
-    //on load this should ping the main process and get info about the current game-load process
-    //and then update as new events are sent
+
     ipcRenderer.on('gameLoad', (event, args) => {
       this.setState(
         {
-          gameCount: this.state.gameCount + 1,
-          conversionCount: this.state.conversionCount + args.conversionsLoaded,
-          current: args.gamesLoaded,
-          max: args.max,
-          windowCount: args.windowsLoaded
+          gameCount: gameCountStmt.get(),
+          conversionCount: conversionCountStmt.get(),
+          currentLoadCount: args.gamesLoaded
         })
-    })
-    
-    ipcRenderer.on('windowCountChange', (event, args) => {
-      this.setState({
-        windowCount: args
-      })
     })
   }
 
   componentDidMount() {
-    ipcRenderer.invoke('startDatabaseLoad');
+    ipcRenderer.invoke('startDatabaseLoad').then((result) => {
+      this.setState({
+        maxLoadCount: result.max,
+        currentLoadCount: result.gameCount
+      })
+    })
   }
 
   componentWillUnmount() {
     ipcRenderer.removeAllListeners('gameLoad');
-    ipcRenderer.removeAllListeners('windowCountChange');
   }
 
   linearProgressWithLabel() {
-    let value = (this.state.current / this.state.max) * 100;
+    let value = (this.state.currentLoadCount / this.state.maxLoadCount) * 100;
 
     return value >= 100
       ? <div>All {this.state.max} games loaded!</div>
@@ -56,7 +51,7 @@ class DatabaseProgressBar extends React.Component {
             <LinearProgress variant="determinate" value={value} />
           </Box>
           <Box sx={{ minWidth: 35 }}>
-            <Typography variant="body2" color="text.secondary">{`${this.state.current} of ${this.state.max} games loaded`}</Typography>
+            <Typography variant="body2" color="text.secondary">{`${this.state.currentLoadCount} of ${this.state.maxLoadCount} games loaded`}</Typography>
           </Box>
         </Box>
       );
@@ -67,9 +62,11 @@ class DatabaseProgressBar extends React.Component {
       <div>
         <Box sx={{ width: '100%' }}>
           {this.state.gameCount} games and {this.state.conversionCount} conversions loaded
-          {this.state.current && this.state.max && this.linearProgressWithLabel()}
+          {this.state.currentLoadCount && this.state.maxLoadCount && this.linearProgressWithLabel()}
+          <div>
+            {this.state.maxLoadCount === 0 && 'No new games found!'}
+          </div>
         </Box>
-        {this.state.windowCount > 0 && <div>{this.state.windowCount} workers loading games</div>}
       </div>
     );
   }

@@ -40,7 +40,7 @@ const createWindow = () => {
   mainWindow.on('closed', () => app.quit());
 };
 
-const createInvisWindow = () => {
+const createInvisWindow = (start, range, files) => {
   let invisWindow = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -50,6 +50,9 @@ const createInvisWindow = () => {
     },
   });
   invisWindow.loadFile(path.join(__dirname, 'invisRenderer.html'))
+  invisWindow.webContents.once('did-finish-load', () => {
+    invisWindow.webContents.send('startLoad', { start: start, range: range, files: files })
+  })
 }
 
 // This method will be called when Electron has finished
@@ -74,82 +77,62 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-
 ipcMain.handle('startDatabaseLoad', async () => {
-  createDataWorkers();
+  return await createDataWorkers();
 });
 
 //on completion of function, we forward it back to the main window
 ipcMain.handle('reply', async (event, message) => {
   await mainWindow.webContents.send('reply', message);
 });
-ipcMain.handle('error', async (event, message) => {
-  console.error('ERROR from renderer')
-  console.error(message);
-});
-//gross
-//used to be dataWorkers but packing the app into asar didnt play well
-//so invisible-electron-windows is the only way i know to do multithreaded
 
-//rewrite this and make the state more robust
-// dataLoad states: none, inprogress, completed
+var dataLoadInProgress = false;
+var maxGamesToLoad = 0;
+var gamesLoaded = 0;
 async function createDataWorkers() {
-  console.log(BrowserWindow.getAllWindows().length);
-  if (BrowserWindow.getAllWindows().length > 1) { return };
-  let windowCount = os.cpus().length - 1 || 1;
+  if (dataLoadInProgress) {
+    return {max: maxGamesToLoad, gamesLoaded: gamesLoaded};
+  }
+  dataLoadInProgress = true;
+  maxGamesToLoad = 0;
+  gamesLoaded = 0;
 
-  const settingsStmt = db.prepare('SELECT value from settings where key = ?')
+  const settingsStmt = db.prepare('SELECT value FROM settings WHERE key = ?')
   const replayPath = settingsStmt.get('replayPath').value;
   const localFiles = await getReplayFiles(replayPath);
 
-  const dbFiles = db.prepare('SELECT name from games');
-  const alreadyLoadedFiles = dbFiles.all().map((x) => x.name);
-
+  const dbFiles = db.prepare('SELECT name FROM games').all().map((x) => x.name);
+  const errorFiles = db.prepare('SELECT name FROM errorGame').all().map((x) => x.name);
+  const alreadyLoadedFiles = dbFiles.concat(errorFiles);
   const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
+  maxGamesToLoad = files.length;  
+  //just picking a random number
+  let windowCount = maxGamesToLoad < 10 ? 1 : (os.cpus().length || 1);  
 
-  const max = files.length;
-  if (files.length < windowCount) {
-    windowCount = 1;
-  }
-  const range = Math.ceil(max / windowCount);
-  const finalRange = range + ((max + 1) % windowCount);
-  let fileIndexStart = 0;
-  let windowsLoaded = 0;
-  if (files.length > 0) {
-    let gamesLoaded = 0;
-    ipcMain.removeHandler('loaded');
-    ipcMain.handle('loaded', (event, args) => {
-      //something went wrong
-      if (windowsLoaded > windowCount) {return}
-
-      console.log('Loaded!');
-      windowsLoaded++;
-      let myStart = fileIndexStart;
-      let myRange = windowsLoaded === windowCount ? finalRange : range;
-      fileIndexStart += range;
-      return { start: myStart, range: myRange, files: files }
-    })
-
-    ipcMain.removeHandler('gameLoad');
-    ipcMain.handle('gameLoad', (event, args) => {
-      gamesLoaded++
-      mainWindow.webContents.send('gameLoad', { conversionsLoaded: args, gamesLoaded: gamesLoaded, max: max, windowsLoaded: windowsLoaded });
-    })
-
-    ipcMain.removeHandler('finish');
-    ipcMain.handle('finish', (event, args) => {
-      console.log('windows');      
-      let win = BrowserWindow.getAllWindows().find(x=>x.webContents.id == event.sender.id);
-      //sometimes this throws an error but the window closes anyways...      
-      win?.close()
-      windowsLoaded--;
-      mainWindow.webContents.send('windowCountChange', windowsLoaded)
-    })
+  if (maxGamesToLoad > 0) {
+    let fileIndexStart = 0;
+    const range = Math.ceil(maxGamesToLoad / windowCount);
+    const finalRange = range + ((maxGamesToLoad + 1) % windowCount);
     for (let i = 0; i < windowCount; i++) {
-      createInvisWindow();
+      let fileRange = i + 1 === windowCount ? finalRange : range
+      createInvisWindow(fileIndexStart, fileRange, files);
+      fileIndexStart += fileRange;
     }
   }
+  return {max: maxGamesToLoad, gamesLoaded: gamesLoaded};
 }
+
+ipcMain.handle('gameLoad', (event, args) => {
+  gamesLoaded++
+  mainWindow.webContents.send('gameLoad', { gamesLoaded: gamesLoaded});
+})
+
+ipcMain.handle('finish', (event, args) => {         
+  let win = BrowserWindow.getAllWindows().find(x=>x.webContents.id == event.sender.id);
+  //sometimes this throws an error but the window closes anyways...      
+  win?.close()
+  if (BrowserWindow.getAllWindows().length === 1) { dataLoadInProgress = false };
+})
 
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
@@ -208,8 +191,9 @@ function initDB() {
   )`).run();
   const errorGameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS errorGame (
     name NOT NULL,
-    Path Primary Key
-  )`)
+    Path Primary Key,
+    reason
+  )`).run();
   // db.prepare('CREATE INDEX IF NOT EXISTS search_index_2 ON conversions (attackingPlayer, attackingCharacter, defendingPlayer, defendingCharacter, stage, percent, moveCount, didKill)').run();
   // db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
   // db.prepare('CREATE INDEX IF NOT EXISTS attacking_index ON conversions (attackingPlayer)').run();

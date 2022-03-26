@@ -2,19 +2,15 @@ const path = require('path');
 const fs = require('fs');
 const {
     exec,
-    spawn,
     spawnSync
 } = require('child_process');
-const { _ } = require('lodash')
-// const crypto = require('crypto');
+const { _ } = require('lodash');
 const OBSWebsocket = require('obs-websocket-js');
-const { resolve } = require('path');
 const db = require('better-sqlite3')('melee.db');
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 
 exports.playConversions = async function playAndRecordConversions(conversions, recordConversions, recordingPath, recordingName) {
     let command = getReplayCommand(conversions);
-
     if (!recordConversions) {
         disableOrEnableDolphinRecording(false);
         playConversions(command);
@@ -42,12 +38,12 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
             let i = 0;
             while (renameLoop) {
                 i++
-                if (i > 10000) { return}
+                if (i > 10000) { return }
                 try {
                     fs.copyFileSync(fullMoviePath, recordedFilePath)
                     fs.unlinkSync(fullMoviePath)
                     renameLoop = false;
-                } catch (e) { console.log(e) }
+                } catch (e) { }
             }
             console.log('done')
         } else if (recordMethod === 'OBS') {
@@ -58,7 +54,7 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
             let i = 0;
             while (renameLoop) {
                 i++
-                if (i > 10000) { return}
+                if (i > 10000) { return }
                 try {
                     fs.copyFileSync(recordedFile, recordedFilePath)
                     fs.unlinkSync(recordedFile)
@@ -95,6 +91,7 @@ async function playConversions(replayCommand) {
         })
     })
 }
+
 function getReplayCommand(conversions) {
     const playbackPath = settingsStmt.get('dolphinPath').value;
     const isoPath = settingsStmt.get('isoPath').value;
@@ -198,7 +195,6 @@ function disableOrEnableDolphinRecording(enable = false) {
     const newConfig = config.replace(settingsRegExp, newSetting, 'utf-8');
     fs.writeFileSync(fullPlaybackPath, newConfig);
 }
-
 
 function getPlaybackFolder() {
     const regExp = /(.*\\)/;

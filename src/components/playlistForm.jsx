@@ -11,20 +11,20 @@ const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 class PlaylistForm extends React.Component {
     constructor(props) {
         super(props);
-        let fields = ['playList', 'playReplay', 'startAt', 'attackingPlayer', 'attackingCharacter', 'defendingPlayer', 'defendingCharacter', 'stage', 'percent', 'time', 'didKill', 'moveCount']
         let playlists = db.prepare('SELECT * from playlists').all().map(x => ({ label: x.name, value: x.name }));
         this.recordingPath = React.createRef();
         this.state = {
             conversions: undefined,
             playlists: playlists,
             selectedPlaylist: '',
-            fields: fields,
             dialogOpen: false,
             recordingName: '',
             recordingPath: settingsStmt.get('recordingPath')?.value || '',
             replayPathError: '',
             successRecording: ''
         }
+        this.playlistDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
+        this.recordDisabled = (settingsStmt.get('recordMethod') && !this.playlistDisabled) ? false : true;
         this.alterPlaylist = this.alterPlaylist.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
         this.handleOrderChange = this.handleOrderChange.bind(this);
@@ -218,8 +218,8 @@ class PlaylistForm extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)}>Play all Replays</Button>
-                        <Button id="recordPlaylistReplays" onClick={(e) => this.handleDialogOpen()}>Record all Replays</Button>
+                        <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)} disabled={this.playlistDisabled}>Play all Replays</Button>
+                        <Button id="recordPlaylistReplays" onClick={(e) => this.handleDialogOpen()} disabled={this.recordDisabled}>Record all Replays</Button>
                     </div>
                     : this.state.selectedPlaylist === ''
                         ? <div>Select/Create a playlist </div>

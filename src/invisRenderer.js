@@ -5,28 +5,29 @@ const db = require('better-sqlite3')('melee.db');
 const {
     v4: uuidv4
 } = require('uuid');
-const {ipcRenderer} = require('electron')
-
-ipcRenderer.invoke('loaded').then((result) => {
+const { ipcRenderer } = require('electron')
+console.log('pewpew')
+ipcRenderer.on('startLoad', async (event, message) => {
+    console.log(message);
     (async () => {
         let {
             start,
             range,
             files
-        } = result;
+        } = message;
         let end = start + range;
-    
+
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
-        const insertConversion = db.prepare("INSERT INTO conversions (moveString, zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@moveString, @zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
+        const insertConversion = db.prepare("INSERT OR IGNORE INTO conversions (moveString, zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@moveString, @zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (inverseMoveIndex, conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@inverseMoveIndex, @conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
-    
+        const insertError = db.prepare("INSERT OR IGNORE INTO errorGame (name, path, reason) VALUES (@name, @path, @reason)");
         for (let i = start; i < end; i++) {
             try {
+                currentFile = files[i];
                 const game = new SlippiGame(files[i].path);
-                currentFile = files[i].path;
                 const settings = game.getSettings();
                 const metadata = game.getMetadata();
-    
+
                 let conversions = game.getStats().conversions;
                 let moves = [];
                 for (let j = 0; j < conversions.length; j++) {
@@ -58,38 +59,37 @@ ipcRenderer.invoke('loaded').then((result) => {
                     conversions[j].zeroToDeath = conversions[j].startPercent === 0 && conversions[j].didKill == 1 ? 1 : 0;
                     //changing string from 10,12,13 to ,10,12,13, prevents weird search issues
                     //LIKE %0,1% will return the above. By adding commas we can do LIKE %,0,1,%
-                    conversions[j].moveString = ','+conversions[j].moves.map(move => move.moveId).join(',')+',';
+                    conversions[j].moveString = ',' + conversions[j].moves.map(move => move.moveId).join(',') + ',';
                     //copy by value
                     moves = moves.concat(conversions[j].moves);
                 }
                 insertGame.run(files[i]);
-    
+
                 const insertManyConversions = db.transaction((data) => {
                     for (const obj of data) insertConversion.run(obj);
                 });
                 insertManyConversions(conversions);
-    
+
                 //moves has to go after conversions cause foreign key is defined
                 const insertManyMoves = db.transaction((data) => {
                     for (const obj of data) insertMove.run(obj);
                 });
                 insertManyMoves(moves);
-                ipcRenderer.invoke('gameLoad', conversions.length);
-            } catch (e) {   
-                console.log(currentFile);
-                console.log(e);
-                ipcRenderer.invoke('error', e)
+            } catch (e) {
+                if (currentFile) {
+                    currentFile.reason = e.message || e;
+                    insertError.run(currentFile);
+                }
+            }
+            finally {
+                ipcRenderer.invoke('gameLoad');
             }
         }
     })().finally(() => {
         ipcRenderer.invoke('finish');
     });
-   
-})
+});
 
 function invertPlayerIndex(index) {
     return index == 0 ? 1 : 0;
 }
-
-
-
