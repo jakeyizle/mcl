@@ -6,7 +6,7 @@ const {
     v4: uuidv4
 } = require('uuid');
 const { ipcRenderer } = require('electron')
-console.log('pewpew')
+
 ipcRenderer.on('startLoad', async (event, message) => {
     console.log(message);
     (async () => {
@@ -18,7 +18,7 @@ ipcRenderer.on('startLoad', async (event, message) => {
         let end = start + range;
 
         const insertGame = db.prepare("INSERT OR IGNORE INTO GAMES (name, path) VALUES (@name, @path)");
-        const insertConversion = db.prepare("INSERT OR IGNORE INTO conversions (moveString, zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@moveString, @zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
+        const insertConversion = db.prepare("INSERT OR IGNORE INTO conversions (damagePerFrame, moveString, zeroToDeath, startAt, moveCount, id, filepath, playerIndex,opponentIndex,startFrame,endFrame,startPercent,currentPercent,endPercent,didKill,openingType,attackingPlayer,defendingPlayer,attackingCharacter,defendingCharacter,stage,percent,time) VALUES (@damagePerFrame, @moveString, @zeroToDeath, @startAt, @moveCount, @id, @filePath, @playerIndex,@opponentIndex,@startFrame,@endFrame,@startPercent,@currentPercent,@endPercent,@didKill,@openingType,@attackingPlayer,@defendingPlayer,@attackingCharacter,@defendingCharacter,@stage,@percent,@time)")
         const insertMove = db.prepare("INSERT OR IGNORE INTO MOVES (inverseMoveIndex, conversionId,moveId,frame,hitCount,damage, moveIndex) VALUES (@inverseMoveIndex, @conversionId,@moveId,@frame,@hitCount,@damage, @moveIndex)");
         const insertError = db.prepare("INSERT OR IGNORE INTO errorGame (name, path, reason) VALUES (@name, @path, @reason)");
         for (let i = start; i < end; i++) {
@@ -44,6 +44,7 @@ ipcRenderer.on('startLoad', async (event, message) => {
                     conversions[j].stage = settings.stageId;
                     conversions[j].percent = Math.round((conversions[j].currentPercent - conversions[j].startPercent) * 100) / 100;
                     conversions[j].time = Math.round((conversions[j].endFrame - conversions[j].startFrame) * 100) / 100;
+                    conversions[j].damagePerFrame = Math.round((conversions[j].percent / conversions[j].time) * 100) / 100;
                     conversions[j].opponentIndex = defendingIndex;
                     conversions[j].didKill = conversions[j].didKill ? 1 : 0;
                     conversions[j].id = uuidv4();

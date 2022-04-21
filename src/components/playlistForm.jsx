@@ -23,8 +23,8 @@ class PlaylistForm extends React.Component {
             replayPathError: '',
             successRecording: ''
         }
-        this.playlistDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
-        this.recordDisabled = (settingsStmt.get('recordMethod') && !this.playlistDisabled) ? false : true;
+        this.playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
+        this.recordDisabled = (settingsStmt.get('recordMethod') && !this.playDisabled) ? false : true;
         this.alterPlaylist = this.alterPlaylist.bind(this);
         this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
         this.handleOrderChange = this.handleOrderChange.bind(this);
@@ -125,7 +125,7 @@ class PlaylistForm extends React.Component {
     handleDialogClose(successRecording = '') {
         this.setState({ dialogOpen: false, recordingName: '', successRecording: successRecording });
         setTimeout(() => {
-            this.setState({successRecording: ''})
+            this.setState({ successRecording: '' })
         }, 4000)
     }
 
@@ -218,7 +218,7 @@ class PlaylistForm extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)} disabled={this.playlistDisabled}>Play all Replays</Button>
+                        <Button id="playPlaylistReplays" onClick={(e) => playConversions(this.state.conversions)} disabled={this.playDisabled}>Play all Replays</Button>
                         <Button id="recordPlaylistReplays" onClick={(e) => this.handleDialogOpen()} disabled={this.recordDisabled}>Record all Replays</Button>
                     </div>
                     : this.state.selectedPlaylist === ''

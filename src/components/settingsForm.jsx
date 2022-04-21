@@ -1,5 +1,5 @@
 import { Box, Button, FormControlLabel, Radio, RadioGroup, TextField, FormLabel } from "@mui/material";
-const {dialog} = require('electron').remote;
+const { dialog } = require('electron').remote;
 const db = require('better-sqlite3')('melee.db');
 const settingsStmt = db.prepare('SELECT value from settings where key = ?');
 const settingsUpsert = db.prepare('INSERT INTO settings (key, value) values (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value');
@@ -41,7 +41,7 @@ class SettingsForm extends React.Component {
         let value;
         switch (target.type) {
             case 'file':
-                const path = target.files[0]?.path;                
+                const path = target.files[0]?.path;
                 value = path;
                 if (target.name === 'replayPath') {
                     //get the directory of a file
@@ -51,14 +51,14 @@ class SettingsForm extends React.Component {
                 break;
             case 'button':
                 if (!folder) return;
-                value = folder?.[0]+'\\';
+                value = folder?.[0] + '\\';
                 break;
             default:
                 value = target.type === 'checkbox' ? target.checked : target.value;
                 break;
-        }        
+        }
         this.setState({
-            [name]:  value
+            [name]: value
         })
         settingsUpsert.run({ key: name, value: value });
     }
@@ -94,7 +94,7 @@ class SettingsForm extends React.Component {
                     {this.state.dolphinPath && <span>{this.state.dolphinPath}</span>}
                 </div>
                 <div>
-                    <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({properties: ['openDirectory']}))}>Set Path Where Recordings Will Be Saved</Button>
+                    <Button variant="outlined" name="recordingPath" onClick={(e) => this.handleInputChange(e, dialog.showOpenDialogSync({ properties: ['openDirectory'] }))}>Set Path Where Recordings Will Be Saved</Button>
                     {this.state.recordingPath && <span>{this.state.recordingPath}</span>}
                 </div>
                 <div>

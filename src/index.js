@@ -91,7 +91,7 @@ var maxGamesToLoad = 0;
 var gamesLoaded = 0;
 async function createDataWorkers() {
   if (dataLoadInProgress) {
-    return {max: maxGamesToLoad, gamesLoaded: gamesLoaded};
+    return { max: maxGamesToLoad, gamesLoaded: gamesLoaded };
   }
   dataLoadInProgress = true;
   maxGamesToLoad = 0;
@@ -105,9 +105,9 @@ async function createDataWorkers() {
   const errorFiles = db.prepare('SELECT name FROM errorGame').all().map((x) => x.name);
   const alreadyLoadedFiles = dbFiles.concat(errorFiles);
   const files = localFiles.filter((file) => !alreadyLoadedFiles.includes(file.name));
-  maxGamesToLoad = files.length;  
+  maxGamesToLoad = files.length;
   //just picking a random number
-  let windowCount = maxGamesToLoad < 10 ? 1 : (os.cpus().length || 1);  
+  let windowCount = maxGamesToLoad < 10 ? 1 : (os.cpus().length || 1);
 
   if (maxGamesToLoad > 0) {
     let fileIndexStart = 0;
@@ -119,16 +119,16 @@ async function createDataWorkers() {
       fileIndexStart += fileRange;
     }
   }
-  return {max: maxGamesToLoad, gamesLoaded: gamesLoaded};
+  return { max: maxGamesToLoad, gamesLoaded: gamesLoaded };
 }
 
 ipcMain.handle('gameLoad', (event, args) => {
   gamesLoaded++
-  mainWindow.webContents.send('gameLoad', { gamesLoaded: gamesLoaded});
+  mainWindow.webContents.send('gameLoad', { gamesLoaded: gamesLoaded });
 })
 
-ipcMain.handle('finish', (event, args) => {         
-  let win = BrowserWindow.getAllWindows().find(x=>x.webContents.id == event.sender.id);
+ipcMain.handle('finish', (event, args) => {
+  let win = BrowserWindow.getAllWindows().find(x => x.webContents.id == event.sender.id);
   //sometimes this throws an error but the window closes anyways...      
   win?.close()
   if (BrowserWindow.getAllWindows().length === 1) { dataLoadInProgress = false };
@@ -161,6 +161,7 @@ function initDB() {
       ,startAt
       ,zeroToDeath
       ,moveString
+      ,damagePerFrame
       ,FOREIGN KEY (filepath) REFERENCES games(path)
   )`).run();
   const movesStmt = db.prepare(`CREATE TABLE IF NOT EXISTS moves (

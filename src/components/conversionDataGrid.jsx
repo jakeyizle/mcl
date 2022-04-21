@@ -13,6 +13,7 @@ class ConversionDataGrid extends React.Component {
         super(props);
         const playlists = db.prepare('SELECT * FROM playlists').all();
         const playlistAutocompleteOptions = playlists.map(x => ({ label: x.name }));
+        const playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
         const columns = [
             {
                 field: 'playList', headerName: 'Playlists', flex: 2, sortable: false,
@@ -39,7 +40,7 @@ class ConversionDataGrid extends React.Component {
             },
             {
                 field: 'playReplay', sortable: false, type: 'actions', headerName: 'Play Replay', flex: 1,
-                renderCell: (params) => <Button onClick={(e) => playConversions([params.row], false)}>Play Replay</Button>
+                renderCell: (params) => <Button onClick={(e) => playConversions([params.row], false)} disabled={playDisabled}>Play Replay</Button>
             },
             { field: 'startAt', type: 'date', headerName: 'Match time', flex: 1.5 },
             { field: 'attackingPlayer', headerName: 'Attacking Player', flex: 1 },
@@ -50,7 +51,8 @@ class ConversionDataGrid extends React.Component {
             { field: 'percent', type: 'number', headerName: 'Damage done', flex: 1 },
             { field: 'time', type: 'number', headerName: 'Time', flex: 0.85 },
             { field: 'didKill', type: 'boolean', headerName: 'Killed?', flex: .8 },
-            { field: 'moveCount', type: 'number', headerName: 'Moves', flex: 0.65 }
+            { field: 'moveCount', type: 'number', headerName: 'Moves', flex: 0.65 },
+            { field: 'damagePerFrame', type: 'number', headerName: '% per frame', flex: 1 }
         ]
         if (this.props.isPlaylistGrid) {
             columns.unshift({
@@ -71,7 +73,7 @@ class ConversionDataGrid extends React.Component {
             })
             columns.forEach(x => x.sortable = false);
         }
-        this.columns = columns;        
+        this.columns = columns;
         this.handleChange = this.handleChange.bind(this);
     }
 
@@ -84,7 +86,7 @@ class ConversionDataGrid extends React.Component {
             let playlist = details.option.label;
             let playlistPosition = db.prepare('SELECT playlistPosition FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').get(playlist, conversionId);
             let playlistPositionUpdate = db.prepare('UPDATE playlistConversion SET playlistPosition = playlistPosition - 1 WHERE playlistName = ? and playlistPosition > ?').run(playlist, playlistPosition.playlistPosition);
-            let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').run(playlist, conversionId);            
+            let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE playlistName = ? AND conversionId = ?').run(playlist, conversionId);
             this.props.onConversionRemove?.();
         } else if (reason === 'selectOption') {
             let playlist = details.option.label;
@@ -93,10 +95,10 @@ class ConversionDataGrid extends React.Component {
             let insertStmt = db.prepare('INSERT INTO playlistConversion (playlistName, conversionId, playlistPosition) VALUES (?, ?, ?)').run(playlist, conversionId, playlistPosition)
         } else if (reason === 'clear') {
             let conversionInfo = db.prepare('SELECT playlistName, playlistPosition FROM playlistConversion WHERE conversionId = ?').all(conversionId);
-            for (let i = 0; i < conversionInfo.length; i ++) {
+            for (let i = 0; i < conversionInfo.length; i++) {
                 let playlistPositionUpdateStmt = db.prepare('UPDATE playlistConversion SET playlistPosition = playlistPosition - 1 WHERE playlistName = ? and playlistPosition > ?')
                 let playlistPositionUpdate = playlistPositionUpdateStmt.run(conversionInfo[i].playlistName, conversionInfo[i].playlistPosition);
-            }            
+            }
             let deleteStmt = db.prepare('DELETE FROM playlistConversion WHERE conversionId = ?').run(conversionId);
             this.props.onConversionRemove?.();
         }
@@ -109,9 +111,10 @@ class ConversionDataGrid extends React.Component {
                     ? <DataGrid rowHeight={100}
                         rows={this.props.data}
                         columns={this.columns}
-                        disableColumnMenu 
+                        disableColumnMenu
                         rowsPerPageOptions={[100]}
-                        />
+                        disableSelectionOnClick
+                    />
                     : <DataGrid rowHeight={100}
                         rows={this.props.data}
                         columns={this.columns}
@@ -126,9 +129,9 @@ class ConversionDataGrid extends React.Component {
                         onSortModelChange={(e) => this.props.handleSortModelChange(e)}
                         sortingOrder={['desc', 'asc']}
                         disableColumnMenu
-                        sortModel={this.props.sortModel} 
+                        sortModel={this.props.sortModel}
                         disableSelectionOnClick
-                        />}
+                    />}
             </span>
         )
     }

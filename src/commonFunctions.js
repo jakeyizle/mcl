@@ -45,7 +45,6 @@ exports.playConversions = async function playAndRecordConversions(conversions, r
                     renameLoop = false;
                 } catch (e) { }
             }
-            console.log('done')
         } else if (recordMethod === 'OBS') {
             disableOrEnableDolphinRecording(false);
             recordedFilePath += 'mkv'
