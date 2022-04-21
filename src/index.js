@@ -19,7 +19,7 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
 }
 
 let mainWindow;
-
+let searchWindow;
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -55,6 +55,21 @@ const createInvisWindow = (start, range, files) => {
   })
 }
 
+const createInvisSearchWindow = (query, queryObject) => {
+  let invisWindow = new BrowserWindow({
+    // show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
+    },
+  });
+  invisWindow.loadFile(path.join(__dirname, 'invisRenderer.html'))
+  invisWindow.webContents.once('did-finish-load', () => {
+    invisWindow.webContents.send('search', { query, queryObject })
+  })
+  return invisWindow;
+}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -131,9 +146,29 @@ ipcMain.handle('finish', (event, args) => {
   let win = BrowserWindow.getAllWindows().find(x => x.webContents.id == event.sender.id);
   //sometimes this throws an error but the window closes anyways...      
   win?.close()
-  if (BrowserWindow.getAllWindows().length === 1) { dataLoadInProgress = false };
+  let openWindowCount = BrowserWindow.getAllWindows().length;
+  if (openWindowCount === 1 ||
+    (searchWindow && openWindowCount === 2)) { dataLoadInProgress = false };
 })
 
+//search for Games
+ipcMain.on('startSearch', (event, args) => {
+  console.log(args);
+  //create searchWindow if not made, else just send event
+  if (searchWindow) {
+    searchWindow.webContents.send('search', { query:args.query, queryObject:args.queryObject });
+  } else {
+    searchWindow = createInvisSearchWindow(args.query, args.queryObject);
+  }
+})
+
+ipcMain.on('searchFinish', (event, args) => {
+  console.log(args);
+  mainWindow.webContents.send('updateSearch', args);
+  // let win = BrowserWindow.getAllWindows().find(x => x.webContents.id == event.sender.id);
+  // //sometimes this throws an error but the window closes anyways...      
+  // win?.close()
+})
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Characters, Stages, CharacterStrings, StageStrings, moves } from '../static/meleeIds.js';
 // import Button from '@mui/material/Button';
 import { TextField, Button, Checkbox, Box, FormControlLabel, Select, FormControl, Autocomplete, MenuItem, Grid, CircularProgress } from '@mui/material';
+import { ipcRenderer } from 'electron/renderer';
 
 const db = require('better-sqlite3')('melee.db');
 
@@ -37,8 +38,10 @@ class SearchForm extends React.Component {
       dbAttackingPlayerOpen: false,
       dbDefendingPlayerList: [],
       dbDefendingPlayerOpen: false,
-      comboMoves: []
+      comboMoves: [],
+      status: 'Please search for conversions',
     }
+    this.newMaxPageNumber = 0;
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleAutocompleteInputChange = this.handleAutocompleteInputChange.bind(this);
     this.getConversions = this.getConversions.bind(this);
@@ -69,6 +72,19 @@ class SearchForm extends React.Component {
         label: moves[moveId].name
       })
     }
+
+    ipcRenderer.on('updateSearch', async (event, message) => {
+      console.log(message);
+      let searchConversions = message;
+      let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
+
+      this.setState({
+        conversions: searchConversions,
+        maxPageNumber: maxPageCount,
+        conversionCount: searchConversions[0]?.total || 0,
+        status: ''
+      });
+    })
   }
 
   handleInputChange(event) {
@@ -181,11 +197,13 @@ class SearchForm extends React.Component {
     console.log(whereString);
     console.log(queryObject)
     console.log(query)
-    let prepQuery = db.prepare(query);
-    let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
-    let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
-    this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
+    queryObject = queryObject ? queryObject : ''
+    ipcRenderer.send('startSearch', { query, queryObject});
+    //this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
+    this.setState({ status: 'Searching in Progress...' })
+
   }
+
 
   setPage(pageNumber, event) {
     event?.preventDefault()
@@ -411,7 +429,7 @@ class SearchForm extends React.Component {
                 />
               </div>
             </div>
-            : <div> No Conversions Found</div>
+            : <div> {this.state.status}</div>
           }
         </Box>
       </div>

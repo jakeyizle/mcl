@@ -7,6 +7,7 @@ const {
 } = require('uuid');
 const { ipcRenderer } = require('electron')
 
+//load files into database
 ipcRenderer.on('startLoad', async (event, message) => {
     console.log(message);
     (async () => {
@@ -94,3 +95,16 @@ ipcRenderer.on('startLoad', async (event, message) => {
 function invertPlayerIndex(index) {
     return index == 0 ? 1 : 0;
 }
+
+//search for conversions in database
+//{ prepQuery, queryObject }
+ipcRenderer.on('search', async (event, message) => {
+    try {
+        console.log(message);
+        let { query, queryObject } = message;
+        let prepQuery = db.prepare(query);
+        let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
+        ipcRenderer.send('searchFinish', searchConversions);     
+        }   catch (e) {
+    }
+});
