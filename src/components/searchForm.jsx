@@ -194,13 +194,12 @@ class SearchForm extends React.Component {
     //is there a better way to get the count?            
     let query = `WITH cte AS(SELECT count(*) total FROM conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
     query += ` ORDER BY ${this.state.sortField} ${this.state.sortDir} LIMIT ${this.state.pageSize} OFFSET ${offset}`
-    console.log(whereString);
-    console.log(queryObject)
-    console.log(query)
+
     queryObject = queryObject ? queryObject : ''
-    ipcRenderer.send('startSearch', { query, queryObject});
-    //this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
-    this.setState({ status: 'Searching in Progress...' })
+    let prepQuery = db.prepare(query);
+    let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
+    let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
+    this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
 
   }
 
