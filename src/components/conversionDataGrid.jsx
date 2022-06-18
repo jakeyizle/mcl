@@ -12,7 +12,7 @@ class ConversionDataGrid extends React.Component {
     constructor(props) {
         super(props);
         const playlists = db.prepare('SELECT * FROM playlists').all();
-        const playlistAutocompleteOptions = playlists.map(x => ({ label: x.name }));
+        
         const playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
         const columns = [
             {
@@ -23,7 +23,9 @@ class ConversionDataGrid extends React.Component {
                     return (
                         <FormControl sx={{ m: 1, width: 1000 }}>
                             <Autocomplete
-                                options={playlistAutocompleteOptions}
+                                //have to update playlists on open, else you can add them and not see them
+                                onOpen={() => this.setPlaylistOptions()}
+                                options={this.state.playlistAutocompleteOptions}
                                 getOptionLabel={(option) => option.label}
                                 isOptionEqualToValue={(option, value) => option.label === value.label}
                                 multiple
@@ -53,6 +55,7 @@ class ConversionDataGrid extends React.Component {
             { field: 'didKill', type: 'boolean', headerName: 'Killed?', flex: .8 },
             { field: 'moveCount', type: 'number', headerName: 'Moves', flex: 0.65 },
             { field: 'damagePerFrame', type: 'number', headerName: '% per frame', flex: 1 }
+
         ]
         if (this.props.isPlaylistGrid) {
             columns.unshift({
@@ -75,6 +78,16 @@ class ConversionDataGrid extends React.Component {
         }
         this.columns = columns;
         this.handleChange = this.handleChange.bind(this);
+        this.state = {
+            playlistAutocompleteOptions: playlists.map(x => ({ label: x.name }))
+        }
+    }
+    
+    setPlaylistOptions() {
+        const playlists = db.prepare('SELECT * FROM playlists').all();
+        this.setState({
+            playlistAutocompleteOptions: playlists.map(x => ({ label: x.name }))
+        })
     }
 
     getPlaylistsWithLabel(conversionId) {

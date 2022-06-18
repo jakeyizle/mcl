@@ -4,28 +4,26 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.handleNavClick = this.handleNavClick.bind(this);
-        this.state = { displayedWidget: <HomeForm />, navItem: "Home" }
+        this.state = {
+            navItem: "Home",
+            Home: 'block',
+            Search: 'none',
+            Playlists: 'none',
+            Settings: 'none',
+        }
+        this.navItems = ['Home', 'Search', 'Playlists', 'Settings']
     }
 
     handleNavClick(navItem) {
-        if (navItem == this.state.navItem) {return}
+        if (navItem == this.state.navItem) { return }
         let widget;
-        switch (navItem) {
-            case "Search":
-                widget = <SearchForm />
-                break;
-            case "Playlists":
-                widget = <PlaylistForm />
-                break;
-            case "Settings":
-                widget = <SettingsForm />
-                break;
-            case "Home":
-            default:
-                widget = <HomeForm />
-                break;
-        }
-        this.setState({ displayedWidget: widget, navItem: navItem })
+        this.navItems.forEach(n => {
+            this.setState({
+                [n]: navItem === n ? 'block' : 'none'
+            })
+        })
+
+        this.setState({ navItem: navItem })
     }
 
     render() {
@@ -36,7 +34,18 @@ class App extends React.Component {
                     <NavigationBar navItems={['Home', 'Search', 'Playlists', 'Settings']} handleOnClick={this.handleNavClick} />
                 </div>
                 <div className="main">
-                    {this.state.displayedWidget}
+                    <div className="Home" style={{ display:this.state.Home}}>
+                        <HomeForm />
+                    </div>
+                    <div className="Search" style={{ display:this.state.Search}}>
+                        <SearchForm />
+                    </div>
+                    <div className="Playlists" style={{ display:this.state.Playlists}}>
+                        <PlaylistForm />
+                    </div>
+                    <div className="Settings" style={{ display:this.state.Settings}}>
+                        <SettingsForm />
+                    </div>
                 </div>
             </div>
         )
