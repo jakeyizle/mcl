@@ -2,11 +2,20 @@ import * as React from 'react';
 
 import { playConversions } from './commonFunctions.js'
 import { Characters, Stages, CharacterStrings, StageStrings, moves } from '../static/meleeIds.js';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { DataGrid, GridToolbarContainer,GridToolbarColumnsButton,GridToolbarDensitySelector,GridToolbarExport } from '@mui/x-data-grid';
 import { Autocomplete, Button, MenuItem, TextField, Select, FormControl, InputLabel, FormLabel, ButtonGroup } from '@mui/material';
 
 const db = require('better-sqlite3')('melee.db');
 
+function CustomToolbar() {
+    return (
+      <GridToolbarContainer>
+        <GridToolbarColumnsButton />
+        <GridToolbarDensitySelector />
+        <GridToolbarExport />
+      </GridToolbarContainer>
+    );
+  }
 
 class ConversionDataGrid extends React.Component {
     constructor(props) {
@@ -128,7 +137,7 @@ class ConversionDataGrid extends React.Component {
                         rowsPerPageOptions={[100]}
                         disableSelectionOnClick
                         components={{
-                            Toolbar: GridToolbar,
+                            Toolbar: CustomToolbar,
                           }}
                     />
                     : <DataGrid rowHeight={100}
@@ -148,7 +157,7 @@ class ConversionDataGrid extends React.Component {
                         sortModel={this.props.sortModel}
                         disableSelectionOnClick
                         components={{
-                            Toolbar: GridToolbar,
+                            Toolbar: CustomToolbar,
                           }}
                     />}
             </span>

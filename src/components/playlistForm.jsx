@@ -166,6 +166,23 @@ class PlaylistForm extends React.Component {
         return fmtMSS(seconds)
     }
 
+    isArrayEqual(a1, a2) {
+        var i = a1.length;
+        while (i--) {
+            if (a1[i] !== a2[i]) return false;
+        }
+        return true
+    }
+    componentDidUpdate() {
+        if (this.state.selectedPlaylist) {
+            let conversions = db.prepare('SELECT * FROM conversions c INNER JOIN playlistConversion p ON c.id = p.conversionId WHERE p.playlistName = ?').all(this.state.selectedPlaylist);
+            let dbIds = conversions.map(x => x.id).sort();
+            let stateIds = this.state.conversions.map(x => x.id).sort();
+            if (!this.isArrayEqual(dbIds, stateIds)) {
+                this.setState({ conversions: conversions.sort((a, b) => a.playlistPosition - b.playlistPosition) })
+            }        
+        }
+    }
     render() {
         this.playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
         this.recordDisabled = (settingsStmt.get('recordMethod') && !this.playDisabled) ? false : true;

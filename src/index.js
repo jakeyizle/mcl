@@ -21,7 +21,7 @@ let mainWindow;
 let searchWindow;
 const createWindow = () => {
   mainWindow = new BrowserWindow({
-    //show: false,
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -47,6 +47,7 @@ const createInvisWindow = (start, range, files) => {
     },
   });
   invisWindow.loadFile(path.join(__dirname, 'invisRenderer.html'))
+  invisWindow.webContents.openDevTools();
   invisWindow.webContents.once('did-finish-load', () => {
     invisWindow.webContents.send('startLoad', { start: start, range: range, files: files })
   })
@@ -54,7 +55,7 @@ const createInvisWindow = (start, range, files) => {
 
 const createInvisSearchWindow = (query, queryObject) => {
   let invisWindow = new BrowserWindow({
-    // show: false,
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -149,19 +150,9 @@ ipcMain.handle('finish', (event, args) => {
   //sometimes this throws an error but the window closes anyways...      
   win?.close()
   let openWindowCount = BrowserWindow.getAllWindows().length;
-  if (openWindowCount === 1 ||
-    (searchWindow && openWindowCount === 2)) { dataLoadInProgress = false };
+  dataLoadInProgress = openWindowCount === 1;
 })
 
-
-
-ipcMain.on('searchFinish', (event, args) => {
-  mainWindow.webContents.send('updateSearch', args);
-  let win = BrowserWindow.getAllWindows().find(x => x.webContents.id == event.sender.id);
-  //sometimes this throws an error but the window closes anyways...      
-  // win?.close()
-  // searchWindow = ''
-})
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
       name NOT NULL,

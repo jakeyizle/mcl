@@ -1,6 +1,4 @@
-const {
-    default: SlippiGame
-} = require('@slippi/slippi-js');
+const { SlippiGame } = require("@slippi/slippi-js");
 const db = require('better-sqlite3')('melee.db');
 const {
     v4: uuidv4
@@ -33,8 +31,8 @@ ipcRenderer.on('startLoad', async (event, message) => {
                 let moves = [];
                 for (let j = 0; j < conversions.length; j++) {
                     //-123 is start of game
-                    let attackingIndex = conversions[j].playerIndex
-                    let defendingIndex = invertPlayerIndex(conversions[j].playerIndex);
+                    let defendingIndex = conversions[j].playerIndex
+                    let attackingIndex = invertPlayerIndex(conversions[j].playerIndex);
                     conversions[j].startFrame = conversions[j].startFrame || -123;
                     conversions[j].endFrame = conversions[j].endFrame || game.getLatestFrame().frame;
                     conversions[j].filePath = files[i].path;
@@ -78,6 +76,7 @@ ipcRenderer.on('startLoad', async (event, message) => {
                 });
                 insertManyMoves(moves);
             } catch (e) {
+                console.log(e);
                 if (currentFile) {
                     currentFile.reason = e.message || e;
                     insertError.run(currentFile);
