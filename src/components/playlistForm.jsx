@@ -167,6 +167,8 @@ class PlaylistForm extends React.Component {
     }
 
     render() {
+        this.playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
+        this.recordDisabled = (settingsStmt.get('recordMethod') && !this.playDisabled) ? false : true;
         return (
             <div>
                 {this.state.successRecording && <Alert severity="success">Succesfully recorded {this.state.successRecording}</Alert>}
@@ -240,7 +242,7 @@ class PlaylistForm extends React.Component {
                         </DialogContent>
                         <DialogActions>
                             <Button name="Cancel" onClick={() => this.handleDialogClose()}>Cancel</Button>
-                            <Button type="submit" name="Record" >Record</Button>
+                            <Button type="submit" name="Record">Record</Button>
                         </DialogActions>
                     </Dialog>
                 </div>

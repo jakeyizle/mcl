@@ -74,7 +74,7 @@ const createInvisSearchWindow = (query, queryObject) => {
 app.on('ready', () => {
   initDB();
   //testing shows the first DB call is slow, but others are fast
-  //attempt to warm up cache
+  //attempt to warm up cache - doesnt seem to work?
   // const startupQuery = 'SELECT COUNT(*) FROM conversions'
   // searchWindow = createInvisSearchWindow(startupQuery);  
   createWindow();
