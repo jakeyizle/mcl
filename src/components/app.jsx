@@ -15,21 +15,16 @@ class App extends React.Component {
     }
 
     handleNavClick(navItem) {
-        if (navItem == this.state.navItem) { return }
-        let widget;
         this.navItems.forEach(n => {
             this.setState({
                 [n]: navItem === n ? 'block' : 'none'
             })
         })
-
-        this.setState({ navItem: navItem })
     }
 
     render() {
         return (
             <div>
-
                 <div>
                     <NavigationBar navItems={['Home', 'Search', 'Playlists', 'Settings']} handleOnClick={this.handleNavClick} />
                 </div>

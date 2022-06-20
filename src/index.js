@@ -8,7 +8,6 @@ const {
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { GridColumnHeadersItemCollection } = require('@mui/x-data-grid');
 const db = require('better-sqlite3')('melee.db');
 db.pragma('journal_mode = WAL');
 // db.pragma('analysis_limit=400');
@@ -21,7 +20,6 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
 let mainWindow;
 let searchWindow;
 const createWindow = () => {
-  // Create the browser window.
   mainWindow = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -30,14 +28,13 @@ const createWindow = () => {
       enableRemoteModule: true,
     },
   });
-
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  mainWindow.webContents.once('did-finish-load', () => {
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));  
+  mainWindow.on('closed', () => app.quit());
+  //using did-load means components will still be loading when window is visible
+  ipcMain.on('windowLoaded', (event, args) => {
     mainWindow.maximize();
     mainWindow.show();
-  });
-  mainWindow.on('closed', () => app.quit());
+  })
 };
 
 const createInvisWindow = (start, range, files) => {
@@ -66,6 +63,7 @@ const createInvisSearchWindow = (query, queryObject) => {
   });
   invisWindow.loadFile(path.join(__dirname, 'invisRenderer.html'))
   invisWindow.webContents.once('did-finish-load', () => {
+    invisWindow.webContents.openDevTools();
     invisWindow.webContents.send('search', { query, queryObject })
   })
   return invisWindow;
@@ -75,6 +73,10 @@ const createInvisSearchWindow = (query, queryObject) => {
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   initDB();
+  //testing shows the first DB call is slow, but others are fast
+  //attempt to warm up cache
+  // const startupQuery = 'SELECT COUNT(*) FROM conversions'
+  // searchWindow = createInvisSearchWindow(startupQuery);  
   createWindow();
 });
 
@@ -151,23 +153,14 @@ ipcMain.handle('finish', (event, args) => {
     (searchWindow && openWindowCount === 2)) { dataLoadInProgress = false };
 })
 
-//search for Games
-ipcMain.on('startSearch', (event, args) => {
-  console.log(args);
-  //create searchWindow if not made, else just send event
-  if (searchWindow) {
-    searchWindow.webContents.send('search', { query:args.query, queryObject:args.queryObject });
-  } else {
-    searchWindow = createInvisSearchWindow(args.query, args.queryObject);
-  }
-})
+
 
 ipcMain.on('searchFinish', (event, args) => {
-  console.log(args);
   mainWindow.webContents.send('updateSearch', args);
-  // let win = BrowserWindow.getAllWindows().find(x => x.webContents.id == event.sender.id);
-  // //sometimes this throws an error but the window closes anyways...      
+  let win = BrowserWindow.getAllWindows().find(x => x.webContents.id == event.sender.id);
+  //sometimes this throws an error but the window closes anyways...      
   // win?.close()
+  // searchWindow = ''
 })
 function initDB() {
   const gameStmt = db.prepare(`CREATE TABLE IF NOT EXISTS games (      
@@ -230,10 +223,10 @@ function initDB() {
     Path Primary Key,
     reason
   )`).run();
-  // db.prepare('CREATE INDEX IF NOT EXISTS search_index_2 ON conversions (attackingPlayer, attackingCharacter, defendingPlayer, defendingCharacter, stage, percent, moveCount, didKill)').run();
-  // db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
-  // db.prepare('CREATE INDEX IF NOT EXISTS attacking_index ON conversions (attackingPlayer)').run();
-  // db.prepare('CREATE INDEX IF NOT EXISTS defending_index ON conversions (defendingPlayer)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS search_index_2 ON conversions (attackingPlayer, attackingCharacter, defendingPlayer, defendingCharacter, stage, percent, moveCount, didKill)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS count_index ON conversions (id)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS attacking_index ON conversions (attackingPlayer)').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS defending_index ON conversions (defendingPlayer)').run();
 }
 
 //get all files in all subdirectories

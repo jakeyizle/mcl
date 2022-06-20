@@ -73,17 +73,9 @@ class SearchForm extends React.Component {
       })
     }
 
-    ipcRenderer.on('updateSearch', async (event, message) => {
+    ipcRenderer.on('updatePlayerList', async (event, message) => {
       console.log(message);
-      let searchConversions = message;
-      let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
-
-      this.setState({
-        conversions: searchConversions,
-        maxPageNumber: maxPageCount,
-        conversionCount: searchConversions[0]?.total || 0,
-        status: ''
-      });
+      
     })
   }
 
@@ -194,12 +186,15 @@ class SearchForm extends React.Component {
     //is there a better way to get the count?            
     let query = `WITH cte AS(SELECT count(*) total FROM conversions ${whereString}) SELECT *, (select total from cte) as total FROM conversions ${whereString}`;
     query += ` ORDER BY ${this.state.sortField} ${this.state.sortDir} LIMIT ${this.state.pageSize} OFFSET ${offset}`
-
+    console.log(query);
     queryObject = queryObject ? queryObject : ''
+    let startTime = Date.now();
     let prepQuery = db.prepare(query);
     let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
     let maxPageCount = searchConversions.length > 0 ? Math.ceil(searchConversions[0].total / this.state.pageSize) : 1;
-    this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 });
+    this.setState({ conversions: searchConversions, maxPageNumber: maxPageCount, conversionCount: searchConversions[0]?.total || 0 }, () => {
+      console.log(Date.now() - startTime);
+    });
 
   }
 

@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { playConversions } from './commonFunctions.js'
 import { Characters, Stages, CharacterStrings, StageStrings, moves } from '../static/meleeIds.js';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { Autocomplete, Button, MenuItem, TextField, Select, FormControl, InputLabel, FormLabel, ButtonGroup } from '@mui/material';
 
 const db = require('better-sqlite3')('melee.db');
@@ -12,8 +12,6 @@ class ConversionDataGrid extends React.Component {
     constructor(props) {
         super(props);
         const playlists = db.prepare('SELECT * FROM playlists').all();
-        
-        const playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
         const columns = [
             {
                 field: 'playList', headerName: 'Playlists', flex: 2, sortable: false,
@@ -42,7 +40,7 @@ class ConversionDataGrid extends React.Component {
             },
             {
                 field: 'playReplay', sortable: false, type: 'actions', headerName: 'Play Replay', flex: 1,
-                renderCell: (params) => <Button onClick={(e) => playConversions([params.row], false)} disabled={playDisabled}>Play Replay</Button>
+                renderCell: (params) => <Button onClick={(e) => playConversions([params.row], false)} disabled={this.playDisabled}>Play Replay</Button>
             },
             { field: 'startAt', type: 'date', headerName: 'Match time', flex: 1.5 },
             { field: 'attackingPlayer', headerName: 'Attacking Player', flex: 1 },
@@ -76,6 +74,7 @@ class ConversionDataGrid extends React.Component {
             })
             columns.forEach(x => x.sortable = false);
         }
+        this.playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
         this.columns = columns;
         this.handleChange = this.handleChange.bind(this);
         this.state = {
@@ -118,6 +117,7 @@ class ConversionDataGrid extends React.Component {
     }
 
     render() {
+        this.playDisabled = (settingsStmt.get('dolphinPath') && settingsStmt.get('isoPath')) ? false : true
         return (
             <span>
                 {this.props.isPlaylistGrid
@@ -127,6 +127,9 @@ class ConversionDataGrid extends React.Component {
                         disableColumnMenu
                         rowsPerPageOptions={[100]}
                         disableSelectionOnClick
+                        components={{
+                            Toolbar: GridToolbar,
+                          }}
                     />
                     : <DataGrid rowHeight={100}
                         rows={this.props.data}
@@ -144,6 +147,9 @@ class ConversionDataGrid extends React.Component {
                         disableColumnMenu
                         sortModel={this.props.sortModel}
                         disableSelectionOnClick
+                        components={{
+                            Toolbar: GridToolbar,
+                          }}
                     />}
             </span>
         )

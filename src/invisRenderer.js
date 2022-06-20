@@ -99,12 +99,14 @@ function invertPlayerIndex(index) {
 //search for conversions in database
 //{ prepQuery, queryObject }
 ipcRenderer.on('search', async (event, message) => {
+    let start = Date.now();
     try {
-        console.log(message);
         let { query, queryObject } = message;
         let prepQuery = db.prepare(query);
         let searchConversions = queryObject ? prepQuery.all(queryObject) : prepQuery.all();
         ipcRenderer.send('searchFinish', searchConversions);     
-        }   catch (e) {
-    }
+        }   catch (e) {}
+        finally {
+            console.log(Date.now() - start)
+        }
 });
