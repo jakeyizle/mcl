@@ -2,7 +2,7 @@ import { Button, Box, TextField, Autocomplete, FormControl, createFilterOptions,
 import * as fs from 'fs'
 import * as React from 'react';
 import { playConversions, isOBSOn } from './commonFunctions.js'
-const { dialog } = require('electron').remote;
+const { dialog } = require('electron');
 
 const db = require('better-sqlite3')('melee.db');
 const filter = createFilterOptions();

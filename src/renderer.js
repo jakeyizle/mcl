@@ -1,10 +1,8 @@
 import * as React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot}  from 'react-dom/client';
 const { ipcRenderer } = require('electron')
-
-ReactDOM.render(
-  <App></App>,
-  document.getElementById('react')
-);
+const container = document.getElementById('react')
+const root = createRoot(container);
+root.render(<App />)
 
 ipcRenderer.send('windowLoaded')

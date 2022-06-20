@@ -21,7 +21,7 @@ let mainWindow;
 let searchWindow;
 const createWindow = () => {
   mainWindow = new BrowserWindow({
-    show: false,
+    //show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
