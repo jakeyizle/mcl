@@ -1,3 +1,8 @@
+This is no longer in development - please see https://github.com/jakeyizle/mcl-ts
+
+
+
+
 The idea behind this project is to go over all of your SSBM slippi replay files and get the conversions (as defined by slippi-js, basically combos). These are stored in a sqlite database, which we can search from. You can assign conversions to playlists, and then play them and record them (using OBS or dolphin frame dump and eventually upload them to gfycat). There are several settings that need to be set.
 
 PLATFORMS:
